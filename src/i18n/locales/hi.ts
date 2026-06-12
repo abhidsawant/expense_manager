@@ -89,5 +89,6 @@ export default {
     description: 'Expo, AsyncStorage और React Navigation से बनी पर्सनल फाइनेंस ऐप।',
     expoDocs: 'Expo दस्तावेज़',
     rnDocs: 'React Native दस्तावेज़',
+    githubRepo: 'GitHub पर देखें',
   },
 };

@@ -89,5 +89,6 @@ export default {
     description: 'Une app de finances personnelles construite avec Expo, AsyncStorage et React Navigation.',
     expoDocs: 'Documentation Expo',
     rnDocs: 'Documentation React Native',
+    githubRepo: 'Voir sur GitHub',
   },
 };

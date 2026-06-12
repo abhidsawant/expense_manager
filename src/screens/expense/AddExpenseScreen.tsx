@@ -58,10 +58,7 @@ export default function AddExpenseScreen({ route, navigation }: any) {
 
   async function capturePhoto() {
     const { status } = await ImagePicker.requestCameraPermissionsAsync();
-    if (status !== 'granted') {
-      Alert.alert(t('addExpense.cameraPermTitle'), t('addExpense.cameraPermMsg'));
-      return;
-    }
+    if (status !== 'granted') { Alert.alert(t('addExpense.cameraPermTitle'), t('addExpense.cameraPermMsg')); return; }
     const result = await ImagePicker.launchCameraAsync({ quality: 0.8 });
     if (!result.canceled) compressAndSet(result.assets[0].uri);
   }
@@ -92,21 +89,25 @@ export default function AddExpenseScreen({ route, navigation }: any) {
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: theme.bg }]}>
       <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        <View style={styles.header}>
-          <Pressable onPress={() => navigation.goBack()} style={styles.closeBtn}>
-            <Ionicons name="close" size={24} color={theme.text} />
+        {/* Header */}
+        <View style={[styles.header, { borderBottomColor: theme.border }]}>
+          <Pressable onPress={() => navigation.goBack()} style={[styles.iconBtn, { backgroundColor: theme.surface }]}>
+            <Ionicons name="close" size={20} color={theme.text} />
           </Pressable>
-          <Text style={[styles.title, { color: theme.text }]}>{existing ? t('addExpense.titleEdit') : t('addExpense.titleNew')}</Text>
-          <View style={{ width: 40 }} />
+          <Text style={[styles.title, { color: theme.text }]}>
+            {existing ? t('addExpense.titleEdit') : t('addExpense.titleNew')}
+          </Text>
+          <View style={{ width: 38 }} />
         </View>
 
         <ScrollView contentContainerStyle={styles.form} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
-          <View style={[styles.amountBox, { backgroundColor: theme.surface, borderColor: theme.border }]}>
-            <Text style={[styles.currencySymbol, { color: theme.primary }]}>{settings.currency}</Text>
+          {/* Amount */}
+          <View style={[styles.amountCard, { backgroundColor: selectedCat?.color ?? theme.primary }]}>
+            <Text style={styles.amountCurrencyLabel}>{settings.currency}</Text>
             <TextInput
-              style={[styles.amountInput, { color: theme.text }]}
-              placeholder={t('addExpense.amountPlaceholder')}
-              placeholderTextColor={theme.textMuted}
+              style={styles.amountInput}
+              placeholder="0.00"
+              placeholderTextColor="rgba(255,255,255,0.5)"
               value={amount}
               onChangeText={setAmount}
               keyboardType="decimal-pad"
@@ -114,22 +115,30 @@ export default function AddExpenseScreen({ route, navigation }: any) {
             />
           </View>
 
-          <Pressable onPress={() => setShowCatPicker(true)} style={[styles.row, { backgroundColor: theme.bgCard, borderColor: theme.border }]}>
-            <View style={[styles.rowIcon, { backgroundColor: (selectedCat?.color ?? theme.primary) + '22' }]}>
+          {/* Category */}
+          <Pressable
+            onPress={() => setShowCatPicker(true)}
+            style={({ pressed }) => [styles.row, { backgroundColor: theme.bgCard, borderColor: theme.border, opacity: pressed ? 0.8 : 1 }]}
+          >
+            <View style={[styles.rowIconWrap, { backgroundColor: (selectedCat?.color ?? theme.primary) + '20' }]}>
               <Ionicons name={(selectedCat?.icon ?? 'grid-outline') as any} size={20} color={selectedCat?.color ?? theme.primary} />
             </View>
             <Text style={[styles.rowText, { color: selectedCat ? theme.text : theme.textMuted }]}>
               {selectedCat?.name ?? t('addExpense.selectCategory')}
             </Text>
-            <Ionicons name="chevron-forward" size={18} color={theme.textMuted} />
+            <Ionicons name="chevron-forward" size={16} color={theme.textMuted} />
           </Pressable>
 
-          <Pressable onPress={() => setShowDatePicker(true)} style={[styles.row, { backgroundColor: theme.bgCard, borderColor: theme.border }]}>
-            <View style={[styles.rowIcon, { backgroundColor: theme.primaryLight }]}>
+          {/* Date */}
+          <Pressable
+            onPress={() => setShowDatePicker(true)}
+            style={({ pressed }) => [styles.row, { backgroundColor: theme.bgCard, borderColor: theme.border, opacity: pressed ? 0.8 : 1 }]}
+          >
+            <View style={[styles.rowIconWrap, { backgroundColor: theme.primaryLight }]}>
               <Ionicons name="calendar-outline" size={20} color={theme.primary} />
             </View>
             <Text style={[styles.rowText, { color: theme.text }]}>{format(date, 'MMM d, yyyy')}</Text>
-            <Ionicons name="chevron-forward" size={18} color={theme.textMuted} />
+            <Ionicons name="chevron-forward" size={16} color={theme.textMuted} />
           </Pressable>
 
           {showDatePicker && (
@@ -142,28 +151,43 @@ export default function AddExpenseScreen({ route, navigation }: any) {
             />
           )}
 
-          <TextInput
-            style={[styles.noteInput, { backgroundColor: theme.bgCard, borderColor: theme.border, color: theme.text }]}
-            placeholder={t('addExpense.notePlaceholder')}
-            placeholderTextColor={theme.textMuted}
-            value={note}
-            onChangeText={txt => setNote(txt.slice(0, 200))}
-            multiline
-            maxLength={200}
-          />
+          {/* Note */}
+          <View style={[styles.noteWrap, { backgroundColor: theme.bgCard, borderColor: theme.border }]}>
+            <Ionicons name="pencil-outline" size={16} color={theme.textMuted} style={{ marginTop: 2 }} />
+            <TextInput
+              style={[styles.noteInput, { color: theme.text }]}
+              placeholder={t('addExpense.notePlaceholder')}
+              placeholderTextColor={theme.textMuted}
+              value={note}
+              onChangeText={txt => setNote(txt.slice(0, 200))}
+              multiline
+              maxLength={200}
+            />
+          </View>
 
-          <Pressable onPress={pickReceipt} style={[styles.receiptBtn, { backgroundColor: theme.bgCard, borderColor: theme.border }]}>
+          {/* Receipt */}
+          <Pressable
+            onPress={pickReceipt}
+            style={[styles.receiptBtn, { backgroundColor: theme.bgCard, borderColor: theme.border }]}
+          >
             {receiptUri ? (
               <Image source={{ uri: receiptUri }} style={styles.receiptThumb} contentFit="cover" />
             ) : (
               <>
-                <Ionicons name="camera-outline" size={24} color={theme.primary} />
+                <View style={[styles.receiptIcon, { backgroundColor: theme.primaryLight }]}>
+                  <Ionicons name="camera-outline" size={22} color={theme.primary} />
+                </View>
                 <Text style={[styles.receiptLabel, { color: theme.textSecondary }]}>{t('addExpense.addReceipt')}</Text>
               </>
             )}
           </Pressable>
 
-          <Button label={existing ? t('addExpense.saveEdit') : t('addExpense.saveNew')} onPress={handleSave} disabled={!isValid} style={styles.saveBtn} />
+          <Button
+            label={existing ? t('addExpense.saveEdit') : t('addExpense.saveNew')}
+            onPress={handleSave}
+            disabled={!isValid}
+            style={styles.saveBtn}
+          />
         </ScrollView>
       </KeyboardAvoidingView>
 
@@ -181,19 +205,31 @@ export default function AddExpenseScreen({ route, navigation }: any) {
 const styles = StyleSheet.create({
   safe: { flex: 1 },
   flex: { flex: 1 },
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12 },
-  closeBtn: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
-  title: { fontSize: 18, fontWeight: '700' },
-  form: { paddingHorizontal: 20, gap: 12, paddingBottom: 40 },
-  amountBox: { flexDirection: 'row', alignItems: 'center', borderRadius: 20, borderWidth: 1.5, paddingHorizontal: 20, paddingVertical: 8 },
-  currencySymbol: { fontSize: 28, fontWeight: '700', marginRight: 4 },
-  amountInput: { flex: 1, fontSize: 40, fontWeight: '700' },
+  header: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1,
+  },
+  iconBtn: { width: 38, height: 38, borderRadius: 19, alignItems: 'center', justifyContent: 'center' },
+  title: { fontSize: 17, fontWeight: '700' },
+  form: { paddingHorizontal: 20, paddingTop: 20, gap: 12, paddingBottom: 48 },
+
+  amountCard: { borderRadius: 22, padding: 24, flexDirection: 'row', alignItems: 'center', gap: 4 },
+  amountCurrencyLabel: { color: 'rgba(255,255,255,0.8)', fontSize: 28, fontWeight: '700' },
+  amountInput: { flex: 1, fontSize: 44, fontWeight: '800', color: '#fff' },
+
   row: { flexDirection: 'row', alignItems: 'center', gap: 12, borderRadius: 16, borderWidth: 1, padding: 14 },
-  rowIcon: { width: 38, height: 38, borderRadius: 19, alignItems: 'center', justifyContent: 'center' },
-  rowText: { flex: 1, fontSize: 16, fontWeight: '500' },
-  noteInput: { borderRadius: 16, borderWidth: 1, padding: 14, fontSize: 15, minHeight: 80, textAlignVertical: 'top' },
-  receiptBtn: { borderRadius: 16, borderWidth: 1, borderStyle: 'dashed', padding: 20, alignItems: 'center', justifyContent: 'center', gap: 8, minHeight: 80 },
+  rowIconWrap: { width: 38, height: 38, borderRadius: 19, alignItems: 'center', justifyContent: 'center' },
+  rowText: { flex: 1, fontSize: 15, fontWeight: '500' },
+
+  noteWrap: { flexDirection: 'row', gap: 10, borderRadius: 16, borderWidth: 1, padding: 14, alignItems: 'flex-start' },
+  noteInput: { flex: 1, fontSize: 15, minHeight: 64, textAlignVertical: 'top' },
+
+  receiptBtn: {
+    borderRadius: 16, borderWidth: 1.5, borderStyle: 'dashed',
+    padding: 20, alignItems: 'center', justifyContent: 'center', gap: 10, minHeight: 88,
+  },
+  receiptIcon: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
   receiptLabel: { fontSize: 14, fontWeight: '500' },
   receiptThumb: { width: '100%', height: 160, borderRadius: 12 },
-  saveBtn: { marginTop: 8 },
+  saveBtn: { marginTop: 4 },
 });

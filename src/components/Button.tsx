@@ -27,13 +27,18 @@ export function Button({ label, onPress, variant = 'primary', disabled, loading,
       disabled={disabled || loading}
       style={({ pressed }) => [
         styles.btn,
-        { backgroundColor: bg, borderColor, opacity: pressed || disabled ? 0.6 : 1 },
+        {
+          backgroundColor: disabled ? theme.surface : bg,
+          borderColor: disabled ? theme.border : borderColor,
+          opacity: pressed ? 0.85 : 1,
+          shadowColor: theme.shadow,
+        },
         style,
       ]}
     >
       {loading
         ? <ActivityIndicator color="#fff" size="small" />
-        : <Text style={[styles.label, { color: textColor }]}>{label}</Text>
+        : <Text style={[styles.label, { color: disabled ? theme.textMuted : textColor }]}>{label}</Text>
       }
     </Pressable>
   );
@@ -43,10 +48,14 @@ const styles = StyleSheet.create({
   btn: {
     borderRadius: 16,
     borderWidth: 1.5,
-    paddingVertical: 14,
+    paddingVertical: 15,
     paddingHorizontal: 24,
     alignItems: 'center',
     justifyContent: 'center',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 10,
+    elevation: 4,
   },
   label: {
     fontSize: 16,

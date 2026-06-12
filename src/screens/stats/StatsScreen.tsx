@@ -30,8 +30,7 @@ export default function StatsScreen() {
     const map: Record<string, number> = {};
     filtered.forEach(e => { map[e.category_id] = (map[e.category_id] ?? 0) + e.amount_cents; });
     const byCat = Object.entries(map).map(([id, amount]) => ({
-      cat: categories.find(c => c.id === id),
-      amount,
+      cat: categories.find(c => c.id === id), amount,
       percent: total > 0 ? (amount / total) * 100 : 0,
     })).sort((a, b) => b.amount - a.amount);
     return { total, byCat };
@@ -43,40 +42,56 @@ export default function StatsScreen() {
         <Text style={[styles.title, { color: theme.text }]}>{t('stats.title')}</Text>
       </View>
 
-      <View style={[styles.monthRow, { backgroundColor: theme.surface }]}>
+      {/* Month switcher */}
+      <View style={[styles.monthRow, { backgroundColor: theme.bgCard, borderColor: theme.border }]}>
         <Pressable onPress={() => shiftMonth(-1)} style={styles.arrowBtn}>
-          <Ionicons name="chevron-back" size={22} color={theme.primary} />
+          <Ionicons name="chevron-back" size={20} color={theme.primary} />
         </Pressable>
         <Text style={[styles.monthLabel, { color: theme.text }]}>{format(selectedDate, 'MMMM yyyy')}</Text>
-        <Pressable onPress={() => shiftMonth(1)} style={styles.arrowBtn} disabled={format(selectedDate, 'yyyy-MM') >= format(new Date(), 'yyyy-MM')}>
-          <Ionicons name="chevron-forward" size={22} color={theme.primary} />
+        <Pressable
+          onPress={() => shiftMonth(1)}
+          style={styles.arrowBtn}
+          disabled={format(selectedDate, 'yyyy-MM') >= format(new Date(), 'yyyy-MM')}
+        >
+          <Ionicons name="chevron-forward" size={20} color={theme.primary} />
         </Pressable>
       </View>
 
-      <ScrollView contentContainerStyle={[styles.content, byCat.length === 0 && styles.emptyContent]} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        contentContainerStyle={[styles.content, byCat.length === 0 && styles.emptyContent]}
+        showsVerticalScrollIndicator={false}
+      >
         {byCat.length === 0 ? (
           <EmptyState message={t('stats.empty')} />
         ) : (
           <>
-            <View style={[styles.totalCard, { backgroundColor: theme.primary }]}>
+            {/* Total card */}
+            <View style={[styles.totalCard, { backgroundColor: theme.primary, shadowColor: theme.shadow }]}>
               <Text style={styles.totalLabel}>{t('stats.totalSpent')}</Text>
               <Text style={styles.totalAmount}>{settings.currency}{(total / 100).toFixed(2)}</Text>
+              <Text style={styles.totalMonth}>{format(selectedDate, 'MMMM yyyy')}</Text>
             </View>
-            <View style={styles.barsSection}>
-              {byCat.map(({ cat, amount, percent }) => (
-                <View key={cat?.id ?? 'unknown'} style={styles.barRow}>
-                  <View style={styles.barMeta}>
-                    <View style={[styles.catDot, { backgroundColor: cat?.color ?? theme.primary }]} />
-                    <Text style={[styles.barCatName, { color: theme.text }]}>{cat?.name ?? 'Unknown'}</Text>
-                    <Text style={[styles.barAmount, { color: theme.textSecondary }]}>{settings.currency}{(amount / 100).toFixed(2)}</Text>
+
+            {/* Category bars */}
+            {byCat.map(({ cat, amount, percent }) => (
+              <View key={cat?.id ?? 'unknown'} style={[styles.barCard, { backgroundColor: theme.bgCard, borderColor: theme.border }]}>
+                <View style={styles.barHeader}>
+                  <View style={[styles.barIconWrap, { backgroundColor: (cat?.color ?? theme.primary) + '20' }]}>
+                    <Ionicons name={(cat?.icon ?? 'ellipsis-horizontal') as any} size={16} color={cat?.color ?? theme.primary} />
                   </View>
-                  <View style={[styles.barTrack, { backgroundColor: theme.surface }]}>
-                    <View style={[styles.barFill, { width: `${percent}%`, backgroundColor: cat?.color ?? theme.primary }]} />
+                  <Text style={[styles.barCatName, { color: theme.text }]}>{cat?.name ?? 'Unknown'}</Text>
+                  <Text style={[styles.barAmount, { color: theme.textSecondary }]}>
+                    {settings.currency}{(amount / 100).toFixed(2)}
+                  </Text>
+                  <View style={[styles.barPercentBadge, { backgroundColor: (cat?.color ?? theme.primary) + '20' }]}>
+                    <Text style={[styles.barPercent, { color: cat?.color ?? theme.primary }]}>{percent.toFixed(0)}%</Text>
                   </View>
-                  <Text style={[styles.barPercent, { color: theme.textMuted }]}>{percent.toFixed(0)}%</Text>
                 </View>
-              ))}
-            </View>
+                <View style={[styles.barTrack, { backgroundColor: theme.surface }]}>
+                  <View style={[styles.barFill, { width: `${percent}%` as any, backgroundColor: cat?.color ?? theme.primary }]} />
+                </View>
+              </View>
+            ))}
           </>
         )}
       </ScrollView>
@@ -86,23 +101,30 @@ export default function StatsScreen() {
 
 const styles = StyleSheet.create({
   safe: { flex: 1 },
-  header: { paddingHorizontal: 20, paddingTop: 8, paddingBottom: 4 },
-  title: { fontSize: 28, fontWeight: '800', letterSpacing: -0.5 },
-  monthRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginHorizontal: 20, borderRadius: 16, padding: 4, marginBottom: 16 },
-  arrowBtn: { padding: 10 },
-  monthLabel: { fontSize: 16, fontWeight: '700' },
-  content: { paddingHorizontal: 20, paddingBottom: 40, gap: 16 },
+  header: { paddingHorizontal: 20, paddingTop: 8, paddingBottom: 8 },
+  title: { fontSize: 30, fontWeight: '800', letterSpacing: -0.5 },
+  monthRow: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    marginHorizontal: 20, borderRadius: 16, marginBottom: 16, borderWidth: 1,
+  },
+  arrowBtn: { padding: 12 },
+  monthLabel: { fontSize: 15, fontWeight: '700' },
+  content: { paddingHorizontal: 20, paddingBottom: 48, gap: 12 },
   emptyContent: { flex: 1 },
-  totalCard: { borderRadius: 24, padding: 24, gap: 4 },
-  totalLabel: { color: 'rgba(255,255,255,0.7)', fontSize: 14, fontWeight: '600' },
-  totalAmount: { color: '#fff', fontSize: 42, fontWeight: '800' },
-  barsSection: { gap: 16 },
-  barRow: { gap: 6 },
-  barMeta: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  catDot: { width: 10, height: 10, borderRadius: 5 },
+  totalCard: {
+    borderRadius: 24, padding: 24, gap: 4,
+    shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.25, shadowRadius: 16, elevation: 8,
+  },
+  totalLabel: { color: 'rgba(255,255,255,0.7)', fontSize: 13, fontWeight: '600', letterSpacing: 0.5 },
+  totalAmount: { color: '#fff', fontSize: 44, fontWeight: '800', letterSpacing: -1 },
+  totalMonth: { color: 'rgba(255,255,255,0.5)', fontSize: 12, marginTop: 2 },
+  barCard: { borderRadius: 16, borderWidth: 1, padding: 14, gap: 10 },
+  barHeader: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  barIconWrap: { width: 30, height: 30, borderRadius: 15, alignItems: 'center', justifyContent: 'center' },
   barCatName: { flex: 1, fontSize: 14, fontWeight: '600' },
-  barAmount: { fontSize: 14, fontWeight: '500' },
-  barTrack: { height: 10, borderRadius: 5, overflow: 'hidden' },
-  barFill: { height: '100%', borderRadius: 5 },
-  barPercent: { fontSize: 11, fontWeight: '500', textAlign: 'right' },
+  barAmount: { fontSize: 13, fontWeight: '500' },
+  barPercentBadge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 10 },
+  barPercent: { fontSize: 12, fontWeight: '700' },
+  barTrack: { height: 8, borderRadius: 4, overflow: 'hidden' },
+  barFill: { height: '100%', borderRadius: 4 },
 });

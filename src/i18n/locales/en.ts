@@ -89,5 +89,6 @@ export default {
     description: 'A React Native fundamentals-first personal finance app. Built with Expo, AsyncStorage, and React Navigation.',
     expoDocs: 'Expo Documentation',
     rnDocs: 'React Native Docs',
+    githubRepo: 'View on GitHub',
   },
 };
