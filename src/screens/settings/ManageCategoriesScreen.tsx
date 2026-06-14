@@ -55,10 +55,10 @@ export default function ManageCategoriesScreen({ navigation }: any) {
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: theme.bg }]}>
       <View style={[styles.header, { paddingHorizontal: hPad }]}>
-        <Pressable onPress={() => navigation.goBack()} style={styles.backBtn}>
-          <Ionicons name="arrow-back" size={24} color={theme.text} />
+        <Pressable onPress={() => navigation.goBack()} style={[styles.iconBtn, { backgroundColor: theme.surface }]}>
+          <Ionicons name="arrow-back" size={20} color={theme.text} />
         </Pressable>
-        <Text style={[styles.title, { color: theme.text }]}>{t('categories.title')}</Text>
+        <Text style={[styles.title, { color: theme.text, fontSize: rs(20, 17, 24) }]}>{t('categories.title')}</Text>
         <Pressable onPress={openAdd} style={[styles.addBtn, { backgroundColor: theme.primary }]}>
           <Ionicons name="add" size={22} color="#fff" />
         </Pressable>
@@ -68,15 +68,19 @@ export default function ManageCategoriesScreen({ navigation }: any) {
         data={categories}
         keyExtractor={c => c.id}
         contentContainerStyle={[styles.list, { paddingHorizontal: hPad }]}
+        showsVerticalScrollIndicator={false}
         renderItem={({ item }) => (
-          <Pressable onPress={() => openEdit(item)} onLongPress={() => handleDelete(item)}
-            style={[styles.row, { backgroundColor: theme.bgCard, borderColor: theme.border }]}>
+          <Pressable
+            onPress={() => openEdit(item)}
+            onLongPress={() => handleDelete(item)}
+            style={({ pressed }) => [styles.row, { backgroundColor: theme.bgCard, borderColor: theme.border, opacity: pressed ? 0.8 : 1 }]}
+          >
             <View style={[styles.iconBadge, { backgroundColor: item.color + '22' }]}>
               <Ionicons name={item.icon as any} size={22} color={item.color} />
             </View>
             <Text style={[styles.catName, { color: theme.text }]}>{item.name}</Text>
             <View style={[styles.colorDot, { backgroundColor: item.color }]} />
-            <Ionicons name="chevron-forward" size={16} color={theme.textMuted} />
+            <Ionicons name="chevron-forward" size={15} color={theme.textMuted} />
           </Pressable>
         )}
       />
@@ -88,13 +92,33 @@ export default function ManageCategoriesScreen({ navigation }: any) {
           keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
         >
           <ScrollView
-            contentContainerStyle={[styles.modal, { backgroundColor: theme.bg, paddingHorizontal: hPad }]}
+            contentContainerStyle={[styles.modal, { paddingHorizontal: hPad }]}
             keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}
           >
-            <View style={styles.modalHandle} />
-            <Text style={[styles.modalTitle, { color: theme.text }]}>{isNew ? t('categories.newTitle') : t('categories.editTitle')}</Text>
+            <View style={[styles.modalHandle, { backgroundColor: theme.border }]} />
 
+            {/* Modal Header */}
+            <View style={styles.modalHeader}>
+              <Text style={[styles.modalTitle, { color: theme.text }]}>
+                {isNew ? t('categories.newTitle') : t('categories.editTitle')}
+              </Text>
+              <Pressable onPress={() => setEditing(null)} style={[styles.iconBtn, { backgroundColor: theme.surface }]}>
+                <Ionicons name="close" size={18} color={theme.text} />
+              </Pressable>
+            </View>
+
+            {/* Preview badge */}
+            <View style={[styles.previewBadge, { backgroundColor: (editing?.color ?? COLORS[0]) + '18', borderColor: editing?.color ?? COLORS[0] }]}>
+              <View style={[styles.previewIconWrap, { backgroundColor: (editing?.color ?? COLORS[0]) + '30' }]}>
+                <Ionicons name={(editing?.icon ?? ICONS[0]) as any} size={28} color={editing?.color ?? COLORS[0]} />
+              </View>
+              <Text style={[styles.previewName, { color: editing?.color ?? COLORS[0] }]}>
+                {editing?.name?.trim() || 'Category Name'}
+              </Text>
+            </View>
+
+            {/* Name input */}
             <TextInput
               style={[styles.nameInput, { backgroundColor: theme.surface, color: theme.text, borderColor: theme.border }]}
               placeholder={t('categories.namePlaceholder')}
@@ -104,13 +128,18 @@ export default function ManageCategoriesScreen({ navigation }: any) {
               autoFocus
             />
 
-            <Text style={[styles.sectionLabel, { color: theme.textSecondary }]}>{t('categories.colorLabel')}</Text>
+            {/* Color */}
+            <Text style={[styles.sectionLabel, { color: theme.textMuted }]}>{t('categories.colorLabel')}</Text>
             <View style={styles.colorRow}>
               {COLORS.map(c => (
-                <Pressable key={c} onPress={() => { setEditing(prev => ({ ...prev, color: c })); setShowPicker(false); }}
-                  style={[styles.colorSwatch, { backgroundColor: c, borderWidth: editing?.color === c ? 3 : 0, borderColor: '#fff' }]} />
+                <Pressable
+                  key={c}
+                  onPress={() => { setEditing(prev => ({ ...prev, color: c })); setShowPicker(false); }}
+                  style={[styles.colorSwatch, { backgroundColor: c, transform: [{ scale: editing?.color === c ? 1.2 : 1 }] }]}
+                >
+                  {editing?.color === c && <Ionicons name="checkmark" size={14} color="#fff" />}
+                </Pressable>
               ))}
-              {/* Custom color pill */}
               <Pressable
                 onPress={() => setShowPicker(p => !p)}
                 style={[styles.colorSwatch, styles.customSwatch, {
@@ -122,14 +151,8 @@ export default function ManageCategoriesScreen({ navigation }: any) {
               </Pressable>
             </View>
 
-            {/* Preview + hex */}
-            <View style={[styles.previewRow, { backgroundColor: theme.surface, borderColor: theme.border }]}>
-              <View style={[styles.previewDot, { backgroundColor: editing?.color ?? COLORS[0] }]} />
-              <Text style={[styles.previewHex, { color: theme.textSecondary }]}>{editing?.color?.toUpperCase()}</Text>
-            </View>
-
             {showPicker && (
-              <View style={styles.pickerWrap}>
+              <View style={[styles.pickerCard, { backgroundColor: theme.bgCard, borderColor: theme.border }]}>
                 <ColorPicker
                   color={editing?.color ?? COLORS[0]}
                   onChange={hex => setEditing(prev => ({ ...prev, color: hex }))}
@@ -144,21 +167,35 @@ export default function ManageCategoriesScreen({ navigation }: any) {
               </View>
             )}
 
-            <Text style={[styles.sectionLabel, { color: theme.textSecondary }]}>{t('categories.iconLabel')}</Text>
+            {/* Icon */}
+            <Text style={[styles.sectionLabel, { color: theme.textMuted }]}>{t('categories.iconLabel')}</Text>
             <View style={styles.iconRow}>
-              {ICONS.map(ic => (
-                <Pressable key={ic} onPress={() => setEditing(prev => ({ ...prev, icon: ic }))}
-                  style={[styles.iconOpt, { backgroundColor: editing?.icon === ic ? theme.primary : theme.surface }]}>
-                  <Ionicons name={ic as any} size={22} color={editing?.icon === ic ? '#fff' : theme.textSecondary} />
-                </Pressable>
-              ))}
+              {ICONS.map(ic => {
+                const isActive = editing?.icon === ic;
+                return (
+                  <Pressable
+                    key={ic}
+                    onPress={() => setEditing(prev => ({ ...prev, icon: ic }))}
+                    style={[styles.iconOpt, { backgroundColor: isActive ? (editing?.color ?? theme.primary) : theme.surface }]}
+                  >
+                    <Ionicons name={ic as any} size={22} color={isActive ? '#fff' : theme.textSecondary} />
+                  </Pressable>
+                );
+              })}
             </View>
 
+            {/* Actions */}
             <View style={styles.modalActions}>
-              <Pressable onPress={() => setEditing(null)} style={[styles.modalBtn, { backgroundColor: theme.surface }]}>
+              <Pressable
+                onPress={() => setEditing(null)}
+                style={[styles.modalBtn, { backgroundColor: theme.surface, flex: 0.4 }]}
+              >
                 <Text style={[styles.modalBtnText, { color: theme.text }]}>{t('common.cancel')}</Text>
               </Pressable>
-              <Pressable onPress={handleSave} style={[styles.modalBtn, { backgroundColor: theme.primary }]}>
+              <Pressable
+                onPress={handleSave}
+                style={[styles.modalBtn, { backgroundColor: editing?.color ?? theme.primary, flex: 0.6 }]}
+              >
                 <Text style={[styles.modalBtnText, { color: '#fff' }]}>{t('common.save')}</Text>
               </Pressable>
             </View>
@@ -171,33 +208,45 @@ export default function ManageCategoriesScreen({ navigation }: any) {
 
 const styles = StyleSheet.create({
   safe: { flex: 1 },
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12 },
-  backBtn: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
-  title: { fontSize: 20, fontWeight: '700' },
-  addBtn: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
-  list: { paddingHorizontal: 16, gap: 8, paddingBottom: 40 },
-  row: { flexDirection: 'row', alignItems: 'center', gap: 12, borderRadius: 16, borderWidth: 1, padding: 14 },
-  iconBadge: { width: 42, height: 42, borderRadius: 21, alignItems: 'center', justifyContent: 'center' },
-  catName: { flex: 1, fontSize: 15, fontWeight: '600' },
-  colorDot: { width: 12, height: 12, borderRadius: 6 },
-  modal: { padding: 24, gap: 12, paddingBottom: 48 },
+  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 12 },
+  iconBtn: { width: 40, height: 40, borderRadius: 13, alignItems: 'center', justifyContent: 'center' },
+  title: { fontWeight: '800', letterSpacing: -0.3 },
+  addBtn: { width: 40, height: 40, borderRadius: 13, alignItems: 'center', justifyContent: 'center' },
+  list: { gap: 8, paddingBottom: 40 },
+  row: {
+    flexDirection: 'row', alignItems: 'center', gap: 12,
+    borderRadius: 18, borderWidth: 1, padding: 14,
+  },
+  iconBadge: { width: 44, height: 44, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
+  catName: { flex: 1, fontSize: 15, fontWeight: '700' },
+  colorPill: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 10 },
+  colorDot: { width: 8, height: 8, borderRadius: 4 },
+  colorHex: { fontSize: 10, fontWeight: '700', letterSpacing: 0.5 },
+
   modalOuter: { flex: 1 },
-  modalHandle: { width: 40, height: 4, borderRadius: 2, backgroundColor: '#ccc', alignSelf: 'center', marginBottom: 8 },
-  modalTitle: { fontSize: 22, fontWeight: '700', marginBottom: 4 },
-  nameInput: { borderRadius: 14, borderWidth: 1.5, padding: 14, fontSize: 16, fontWeight: '500' },
-  sectionLabel: { fontSize: 12, fontWeight: '600', letterSpacing: 0.8 },
-  colorRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
-  colorSwatch: { width: 36, height: 36, borderRadius: 18 },
-  customSwatch: { borderWidth: 1.5, alignItems: 'center', justifyContent: 'center' },
-  previewRow: { flexDirection: 'row', alignItems: 'center', gap: 10, borderRadius: 12, borderWidth: 1, paddingHorizontal: 12, paddingVertical: 8 },
-  previewDot: { width: 24, height: 24, borderRadius: 12 },
-  previewHex: { fontSize: 13, fontWeight: '600', letterSpacing: 1 },
-  pickerWrap: { gap: 10 },
+  modal: { paddingTop: 8, gap: 14, paddingBottom: 48 },
+  modalHandle: { width: 40, height: 4, borderRadius: 2, alignSelf: 'center', marginBottom: 8 },
+  modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  modalTitle: { fontSize: 22, fontWeight: '800', letterSpacing: -0.3 },
+
+  previewBadge: { flexDirection: 'row', alignItems: 'center', gap: 12, borderRadius: 18, borderWidth: 1.5, padding: 14 },
+  previewIconWrap: { width: 48, height: 48, borderRadius: 15, alignItems: 'center', justifyContent: 'center' },
+  previewName: { fontSize: 16, fontWeight: '700' },
+
+  nameInput: { borderRadius: 16, borderWidth: 1.5, padding: 15, fontSize: 16, fontWeight: '600' },
+  sectionLabel: { fontSize: 11, fontWeight: '700', letterSpacing: 1.1, textTransform: 'uppercase' },
+  colorRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, alignItems: 'center' },
+  colorSwatch: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
+  customSwatch: { borderWidth: 1.5 },
+
+  pickerCard: { borderRadius: 18, borderWidth: 1, padding: 16, gap: 14 },
   doneBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, padding: 12, borderRadius: 14 },
   doneBtnText: { color: '#fff', fontSize: 14, fontWeight: '700' },
+
   iconRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
-  iconOpt: { width: 48, height: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center' },
-  modalActions: { flexDirection: 'row', gap: 12, marginTop: 8 },
-  modalBtn: { flex: 1, padding: 16, borderRadius: 16, alignItems: 'center' },
+  iconOpt: { width: 50, height: 50, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
+
+  modalActions: { flexDirection: 'row', gap: 10, marginTop: 6 },
+  modalBtn: { padding: 16, borderRadius: 18, alignItems: 'center' },
   modalBtnText: { fontSize: 16, fontWeight: '700' },
 });

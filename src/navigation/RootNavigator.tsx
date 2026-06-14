@@ -29,12 +29,13 @@ function AppTabs() {
             backgroundColor: theme.tabBar,
             borderTopColor: theme.tabBarBorder,
             borderTopWidth: 1,
-            // let React Navigation handle safe area padding natively
-            height: Platform.OS === 'android' ? 60 : undefined,
+            height: Platform.OS === 'android' ? 68 : undefined,
+            paddingBottom: Platform.OS === 'android' ? 10 : undefined,
+            paddingTop: Platform.OS === 'android' ? 6 : undefined,
           },
         tabBarActiveTintColor: theme.primary,
         tabBarInactiveTintColor: theme.textMuted,
-        tabBarLabelStyle: { fontSize: 11, fontWeight: '600' },
+        tabBarLabelStyle: { fontSize: 11, fontWeight: '600', marginTop: 2 },
         tabBarIcon: ({ focused, color, size }) => {
           const icons: Record<string, [string, string]> = {
             Home: ['wallet', 'wallet-outline'],

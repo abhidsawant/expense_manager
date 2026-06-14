@@ -167,22 +167,22 @@ export default function ColorPicker({ color, onChange }: Props) {
   );
 }
 
-const THUMB = 22;
+const THUMB = 24;
 
 const styles = StyleSheet.create({
-  wrap: { gap: 14 },
-  sbOuter: { width: '100%', aspectRatio: 1, borderRadius: 12, overflow: 'hidden' },
+  wrap: { gap: 16 },
+  sbOuter: { width: '100%', aspectRatio: 1, borderRadius: 16, overflow: 'hidden' },
   sbRow: { flex: 1, flexDirection: 'row' },
   sbCell: { flex: 1 },
-  hueBar: { height: 28, borderRadius: 14, justifyContent: 'center' },
-  hueTrack: { flexDirection: 'row', height: 28, borderRadius: 14, overflow: 'hidden' },
+  hueBar: { height: 32, borderRadius: 16, justifyContent: 'center' },
+  hueTrack: { flexDirection: 'row', height: 32, borderRadius: 16, overflow: 'hidden' },
   hueStop: { flex: 1 },
   thumb: {
     position: 'absolute',
     width: THUMB, height: THUMB, borderRadius: THUMB / 2,
-    borderWidth: 2.5, borderColor: '#fff',
+    borderWidth: 3, borderColor: '#fff',
     marginLeft: -(THUMB / 2), marginTop: -(THUMB / 2),
-    shadowColor: '#000', shadowOpacity: 0.5, shadowRadius: 4, elevation: 6,
+    shadowColor: '#000', shadowOpacity: 0.6, shadowRadius: 6, elevation: 8,
   },
   hueThumb: { top: '50%' as any },
 });

@@ -1,5 +1,5 @@
-import React, { useContext } from 'react';
-import { View, Text, ScrollView, Pressable, StyleSheet, Alert } from 'react-native';
+import React, { useContext, useState } from 'react';
+import { View, Text, ScrollView, Pressable, StyleSheet, Alert, Modal, FlatList } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
@@ -13,8 +13,80 @@ import { Theme } from '../../types';
 import Constants from 'expo-constants';
 import { LANGUAGES } from '../../i18n';
 
-const CURRENCIES = ['$', '€', '£', '¥', '₹'];
+const CURRENCIES = [
+  { symbol: '$', name: 'US Dollar' },
+  { symbol: '€', name: 'Euro' },
+  { symbol: '£', name: 'British Pound' },
+  { symbol: '¥', name: 'Japanese Yen' },
+  { symbol: '₹', name: 'Indian Rupee' },
+];
+
 const THEMES: Theme[] = ['light', 'dark', 'system'];
+
+type DropdownItem = { label: string; value: string; sublabel?: string };
+
+function DropdownPicker({
+  items,
+  selectedValue,
+  onSelect,
+  placeholder,
+}: {
+  items: DropdownItem[];
+  selectedValue: string;
+  onSelect: (value: string) => void;
+  placeholder?: string;
+}) {
+  const [open, setOpen] = useState(false);
+  const theme = useTheme();
+  const selected = items.find(i => i.value === selectedValue);
+
+  return (
+    <>
+      <Pressable
+        onPress={() => setOpen(true)}
+        style={[styles.dropdownTrigger, { backgroundColor: theme.surface, borderColor: theme.border }]}
+      >
+        <Text style={[styles.dropdownTriggerText, { color: selected ? theme.text : theme.textMuted }]}>
+          {selected
+            ? selected.sublabel
+              ? `${selected.label}  —  ${selected.sublabel}`
+              : selected.label
+            : placeholder}
+        </Text>
+        <Ionicons name="chevron-down" size={16} color={theme.textMuted} />
+      </Pressable>
+
+      <Modal visible={open} transparent animationType="fade" onRequestClose={() => setOpen(false)}>
+        <Pressable style={styles.dropdownOverlay} onPress={() => setOpen(false)}>
+          <View style={[styles.dropdownSheet, { backgroundColor: theme.bgCard, borderColor: theme.border }]}>
+            <FlatList
+              data={items}
+              keyExtractor={item => item.value}
+              renderItem={({ item }) => {
+                const isActive = item.value === selectedValue;
+                return (
+                  <Pressable
+                    onPress={() => { onSelect(item.value); setOpen(false); }}
+                    style={[
+                      styles.dropdownItem,
+                      { borderBottomColor: theme.border, backgroundColor: isActive ? theme.primaryLight : 'transparent' },
+                    ]}
+                  >
+                    <Text style={[styles.dropdownItemLabel, { color: isActive ? theme.primary : theme.text }]}>{item.label}</Text>
+                    {item.sublabel && (
+                      <Text style={[styles.dropdownItemSub, { color: isActive ? theme.primary : theme.textMuted }]}>{item.sublabel}</Text>
+                    )}
+                    {isActive && <Ionicons name="checkmark" size={16} color={theme.primary} />}
+                  </Pressable>
+                );
+              }}
+            />
+          </View>
+        </Pressable>
+      </Modal>
+    </>
+  );
+}
 
 export default function SettingsScreen({ navigation }: any) {
   const { settings, dispatch } = useContext(SettingsContext);
@@ -47,6 +119,9 @@ export default function SettingsScreen({ navigation }: any) {
       <Ionicons name="chevron-forward" size={15} color={theme.textMuted} />
     </Pressable>
   );
+
+  const currencyItems: DropdownItem[] = CURRENCIES.map(c => ({ value: c.symbol, label: c.symbol, sublabel: c.name }));
+  const languageItems: DropdownItem[] = LANGUAGES.map(l => ({ value: l.code, label: `${l.flag}  ${l.label}` }));
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: theme.bg }]} edges={['top']}>
@@ -97,40 +172,23 @@ export default function SettingsScreen({ navigation }: any) {
         {/* Currency */}
         <SectionLabel title={t('settings.currency')} />
         <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.border }]}>
-          <View style={styles.pillRow}>
-            {CURRENCIES.map(c => {
-              const isActive = settings.currency === c;
-              return (
-                <Pressable
-                  key={c}
-                  onPress={() => dispatch({ type: 'UPDATE', payload: { currency: c } })}
-                  style={[styles.pill, { backgroundColor: isActive ? theme.primary : theme.surface, borderColor: isActive ? theme.primary : theme.border }]}
-                >
-                  <Text style={[styles.pillText, { color: isActive ? '#fff' : theme.textSecondary }]}>{c}</Text>
-                </Pressable>
-              );
-            })}
-          </View>
+          <DropdownPicker
+            items={currencyItems}
+            selectedValue={settings.currency}
+            onSelect={value => dispatch({ type: 'UPDATE', payload: { currency: value } })}
+            placeholder="Select currency"
+          />
         </View>
 
         {/* Language */}
         <SectionLabel title={t('settings.language')} />
         <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.border }]}>
-          <View style={styles.pillRow}>
-            {LANGUAGES.map(lang => {
-              const isActive = settings.language === lang.code;
-              return (
-                <Pressable
-                  key={lang.code}
-                  onPress={() => dispatch({ type: 'UPDATE', payload: { language: lang.code } })}
-                  style={[styles.langPill, { backgroundColor: isActive ? theme.primary : theme.surface, borderColor: isActive ? theme.primary : theme.border }]}
-                >
-                  <Text style={styles.langFlag}>{lang.flag}</Text>
-                  <Text style={[styles.pillText, { color: isActive ? '#fff' : theme.textSecondary }]}>{lang.label}</Text>
-                </Pressable>
-              );
-            })}
-          </View>
+          <DropdownPicker
+            items={languageItems}
+            selectedValue={settings.language}
+            onSelect={value => dispatch({ type: 'UPDATE', payload: { language: value } })}
+            placeholder="Select language"
+          />
         </View>
 
         {/* Data */}
@@ -173,9 +231,21 @@ const styles = StyleSheet.create({
   cardLabel: { fontSize: 12, fontWeight: '600', letterSpacing: 0.3 },
   pillRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   pill: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20, borderWidth: 1.5 },
-  langPill: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 20, borderWidth: 1.5 },
-  langFlag: { fontSize: 15 },
   pillText: { fontSize: 13, fontWeight: '600' },
+
+  dropdownTrigger: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    paddingHorizontal: 14, paddingVertical: 12, borderRadius: 12, borderWidth: 1.5,
+  },
+  dropdownTriggerText: { fontSize: 14, fontWeight: '600' },
+  dropdownOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'center', paddingHorizontal: 32 },
+  dropdownSheet: { borderRadius: 16, borderWidth: 1, overflow: 'hidden', maxHeight: 320 },
+  dropdownItem: {
+    flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 14,
+    borderBottomWidth: 1, gap: 8,
+  },
+  dropdownItemLabel: { fontSize: 15, fontWeight: '600', flex: 1 },
+  dropdownItemSub: { fontSize: 13 },
 
   navRow: { flexDirection: 'row', alignItems: 'center', gap: 12, borderRadius: 16, borderWidth: 1, padding: 14 },
   navIcon: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },

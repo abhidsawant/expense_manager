@@ -24,7 +24,7 @@ export default function StatsScreen() {
     setSelectedDate(prev => { const d = new Date(prev); d.setMonth(d.getMonth() + dir); return d; });
   }
 
-  const { total, byCat } = useMemo(() => {
+  const { total, byCat, txCount, avgPerDay } = useMemo(() => {
     const start = format(startOfMonth(selectedDate), 'yyyy-MM-dd');
     const end = format(endOfMonth(selectedDate), 'yyyy-MM-dd');
     const filtered = state.expenses.filter(e => e.spent_on >= start && e.spent_on <= end);
@@ -35,8 +35,11 @@ export default function StatsScreen() {
       cat: categories.find(c => c.id === id), amount,
       percent: total > 0 ? (amount / total) * 100 : 0,
     })).sort((a, b) => b.amount - a.amount);
-    return { total, byCat };
+    const daysInMonth = endOfMonth(selectedDate).getDate();
+    return { total, byCat, txCount: filtered.length, avgPerDay: total / daysInMonth };
   }, [state.expenses, categories, selectedDate]);
+
+  const isCurrentMonth = format(selectedDate, 'yyyy-MM') >= format(new Date(), 'yyyy-MM');
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: theme.bg }]} edges={['top']}>
@@ -44,13 +47,14 @@ export default function StatsScreen() {
         <Text style={[styles.title, { color: theme.text, fontSize: rs(26, 22, 32) }]}>{t('stats.title')}</Text>
       </View>
 
+      {/* Month Navigator */}
       <View style={[styles.monthRow, { backgroundColor: theme.bgCard, borderColor: theme.border, marginHorizontal: hPad }]}>
         <Pressable onPress={() => shiftMonth(-1)} style={styles.arrowBtn}>
           <Ionicons name="chevron-back" size={20} color={theme.primary} />
         </Pressable>
         <Text style={[styles.monthLabel, { color: theme.text, fontSize: rs(15, 13) }]}>{format(selectedDate, 'MMMM yyyy')}</Text>
-        <Pressable onPress={() => shiftMonth(1)} style={styles.arrowBtn} disabled={format(selectedDate, 'yyyy-MM') >= format(new Date(), 'yyyy-MM')}>
-          <Ionicons name="chevron-forward" size={20} color={theme.primary} />
+        <Pressable onPress={() => shiftMonth(1)} style={styles.arrowBtn} disabled={isCurrentMonth}>
+          <Ionicons name="chevron-forward" size={20} color={isCurrentMonth ? theme.textMuted : theme.primary} />
         </Pressable>
       </View>
 
@@ -62,30 +66,55 @@ export default function StatsScreen() {
           <EmptyState message={t('stats.empty')} />
         ) : (
           <>
+            {/* Total Card */}
             <View style={[styles.totalCard, { backgroundColor: theme.primary, shadowColor: theme.shadow, padding: isSmall ? 18 : 24 }]}>
               <Text style={styles.totalLabel}>{t('stats.totalSpent')}</Text>
-              <Text style={[styles.totalAmount, { fontSize: rs(38, 28, 44) }]}>
+              <Text style={[styles.totalAmount, { fontSize: rs(40, 28, 48) }]}>
                 {settings.currency}{(total / 100).toFixed(2)}
               </Text>
-              <Text style={styles.totalMonth}>{format(selectedDate, 'MMMM yyyy')}</Text>
+              <View style={styles.totalDivider} />
+              {/* Mini stats row */}
+              <View style={styles.statsRow}>
+                <View style={styles.statItem}>
+                  <Ionicons name="receipt-outline" size={14} color="rgba(255,255,255,0.6)" />
+                  <Text style={styles.statValue}>{txCount}</Text>
+                  <Text style={styles.statLabel}>transactions</Text>
+                </View>
+                <View style={[styles.statDivider]} />
+                <View style={styles.statItem}>
+                  <Ionicons name="trending-up-outline" size={14} color="rgba(255,255,255,0.6)" />
+                  <Text style={styles.statValue}>{settings.currency}{(avgPerDay / 100).toFixed(0)}</Text>
+                  <Text style={styles.statLabel}>avg / day</Text>
+                </View>
+                <View style={[styles.statDivider]} />
+                <View style={styles.statItem}>
+                  <Ionicons name="grid-outline" size={14} color="rgba(255,255,255,0.6)" />
+                  <Text style={styles.statValue}>{byCat.length}</Text>
+                  <Text style={styles.statLabel}>categories</Text>
+                </View>
+              </View>
             </View>
 
-            {byCat.map(({ cat, amount, percent }) => (
+            {/* Category Breakdown */}
+            {byCat.map(({ cat, amount, percent }, idx) => (
               <View key={cat?.id ?? 'unknown'} style={[styles.barCard, { backgroundColor: theme.bgCard, borderColor: theme.border }]}>
                 <View style={styles.barHeader}>
-                  <View style={[styles.barIconWrap, { backgroundColor: (cat?.color ?? theme.primary) + '20' }]}>
+                  <View style={[styles.barRank, { backgroundColor: theme.surface }]}>
+                    <Text style={[styles.barRankText, { color: theme.textMuted }]}>#{idx + 1}</Text>
+                  </View>
+                  <View style={[styles.barIconWrap, { backgroundColor: (cat?.color ?? theme.primary) + '22' }]}>
                     <Ionicons name={(cat?.icon ?? 'ellipsis-horizontal') as any} size={16} color={cat?.color ?? theme.primary} />
                   </View>
                   <Text style={[styles.barCatName, { color: theme.text, fontSize: rs(14, 12) }]}>{cat?.name ?? 'Unknown'}</Text>
-                  <Text style={[styles.barAmount, { color: theme.textSecondary, fontSize: rs(13, 11) }]}>
+                  <Text style={[styles.barAmount, { color: theme.text, fontSize: rs(14, 12) }]}>
                     {settings.currency}{(amount / 100).toFixed(2)}
                   </Text>
-                  <View style={[styles.barPercentBadge, { backgroundColor: (cat?.color ?? theme.primary) + '20' }]}>
-                    <Text style={[styles.barPercent, { color: cat?.color ?? theme.primary }]}>{percent.toFixed(0)}%</Text>
-                  </View>
                 </View>
-                <View style={[styles.barTrack, { backgroundColor: theme.surface }]}>
-                  <View style={[styles.barFill, { width: `${percent}%` as any, backgroundColor: cat?.color ?? theme.primary }]} />
+                <View style={styles.barTrackRow}>
+                  <View style={[styles.barTrack, { backgroundColor: theme.surface, flex: 1 }]}>
+                    <View style={[styles.barFill, { width: `${percent}%` as any, backgroundColor: cat?.color ?? theme.primary }]} />
+                  </View>
+                  <Text style={[styles.barPercent, { color: cat?.color ?? theme.primary }]}>{percent.toFixed(0)}%</Text>
                 </View>
               </View>
             ))}
@@ -100,22 +129,39 @@ const styles = StyleSheet.create({
   safe: { flex: 1 },
   header: { paddingTop: 8, paddingBottom: 8 },
   title: { fontWeight: '800', letterSpacing: -0.5 },
-  monthRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderRadius: 16, marginBottom: 16, borderWidth: 1 },
+
+  monthRow: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    borderRadius: 16, marginBottom: 16, borderWidth: 1,
+  },
   arrowBtn: { padding: 12 },
   monthLabel: { fontWeight: '700' },
+
   content: { paddingBottom: 48, gap: 12 },
   emptyContent: { flex: 1 },
-  totalCard: { borderRadius: 24, gap: 4, shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.25, shadowRadius: 16, elevation: 8 },
-  totalLabel: { color: 'rgba(255,255,255,0.7)', fontSize: 13, fontWeight: '600', letterSpacing: 0.5 },
-  totalAmount: { color: '#fff', fontWeight: '800', letterSpacing: -1 },
-  totalMonth: { color: 'rgba(255,255,255,0.5)', fontSize: 12, marginTop: 2 },
-  barCard: { borderRadius: 16, borderWidth: 1, padding: 14, gap: 10 },
+
+  totalCard: {
+    borderRadius: 24, gap: 4,
+    shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.3, shadowRadius: 20, elevation: 10,
+  },
+  totalLabel: { color: 'rgba(255,255,255,0.6)', fontSize: 13, fontWeight: '600', letterSpacing: 0.5 },
+  totalAmount: { color: '#fff', fontWeight: '800', letterSpacing: -1, marginTop: 2 },
+  totalDivider: { height: 1, backgroundColor: 'rgba(255,255,255,0.15)', marginVertical: 14 },
+  statsRow: { flexDirection: 'row', alignItems: 'center' },
+  statItem: { flex: 1, alignItems: 'center', gap: 3 },
+  statDivider: { width: 1, height: 32, backgroundColor: 'rgba(255,255,255,0.15)' },
+  statValue: { color: '#fff', fontSize: 16, fontWeight: '800' },
+  statLabel: { color: 'rgba(255,255,255,0.5)', fontSize: 11, fontWeight: '500' },
+
+  barCard: { borderRadius: 18, borderWidth: 1, padding: 16, gap: 12 },
   barHeader: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  barIconWrap: { width: 30, height: 30, borderRadius: 15, alignItems: 'center', justifyContent: 'center' },
-  barCatName: { flex: 1, fontWeight: '600' },
-  barAmount: { fontWeight: '500' },
-  barPercentBadge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 10 },
-  barPercent: { fontSize: 12, fontWeight: '700' },
-  barTrack: { height: 8, borderRadius: 4, overflow: 'hidden' },
-  barFill: { height: '100%', borderRadius: 4 },
+  barRank: { width: 24, height: 24, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
+  barRankText: { fontSize: 10, fontWeight: '700' },
+  barIconWrap: { width: 32, height: 32, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
+  barCatName: { flex: 1, fontWeight: '700' },
+  barAmount: { fontWeight: '700' },
+  barTrackRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  barTrack: { height: 10, borderRadius: 5, overflow: 'hidden' },
+  barFill: { height: '100%', borderRadius: 5 },
+  barPercent: { fontSize: 13, fontWeight: '800', minWidth: 36, textAlign: 'right' },
 });

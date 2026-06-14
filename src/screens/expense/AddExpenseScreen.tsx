@@ -204,7 +204,7 @@ export default function AddExpenseScreen({ route, navigation }: any) {
         selected={categoryId}
         onSelect={id => { setCategoryId(id); setShowCatPicker(false); }}
         onClose={() => setShowCatPicker(false)}
-        onAddNew={() => { setShowCatPicker(false); navigation.navigate('ManageCategories'); }}
+        onAddNew={() => {}}
       />
     </SafeAreaView>
   );
@@ -221,23 +221,23 @@ const styles = StyleSheet.create({
   title: { fontSize: 17, fontWeight: '700' },
   form: { paddingHorizontal: 20, paddingTop: 20, gap: 12, paddingBottom: 48 },
 
-  amountCard: { borderRadius: 22, padding: 24, flexDirection: 'row', alignItems: 'center', gap: 4 },
-  amountCurrencyLabel: { color: 'rgba(255,255,255,0.8)', fontSize: 24, fontWeight: '700' },
-  amountInput: { flex: 1, fontSize: 38, fontWeight: '800', color: '#fff', minWidth: 0 },
+  amountCard: { borderRadius: 24, padding: 24, flexDirection: 'row', alignItems: 'center', gap: 4 },
+  amountCurrencyLabel: { color: 'rgba(255,255,255,0.8)', fontSize: 26, fontWeight: '700' },
+  amountInput: { flex: 1, fontSize: 42, fontWeight: '800', color: '#fff', minWidth: 0 },
 
-  row: { flexDirection: 'row', alignItems: 'center', gap: 12, borderRadius: 16, borderWidth: 1, padding: 14 },
-  rowIconWrap: { width: 38, height: 38, borderRadius: 19, alignItems: 'center', justifyContent: 'center' },
-  rowText: { flex: 1, fontSize: 15, fontWeight: '500' },
+  row: { flexDirection: 'row', alignItems: 'center', gap: 12, borderRadius: 18, borderWidth: 1, padding: 16 },
+  rowIconWrap: { width: 40, height: 40, borderRadius: 13, alignItems: 'center', justifyContent: 'center' },
+  rowText: { flex: 1, fontSize: 15, fontWeight: '600' },
 
-  noteWrap: { flexDirection: 'row', gap: 10, borderRadius: 16, borderWidth: 1, padding: 14, alignItems: 'flex-start' },
-  noteInput: { flex: 1, fontSize: 15, minHeight: 64, textAlignVertical: 'top' },
+  noteWrap: { flexDirection: 'row', gap: 10, borderRadius: 18, borderWidth: 1, padding: 16, alignItems: 'flex-start' },
+  noteInput: { flex: 1, fontSize: 15, minHeight: 72, textAlignVertical: 'top' },
 
   receiptBtn: {
-    borderRadius: 16, borderWidth: 1.5, borderStyle: 'dashed',
-    padding: 20, alignItems: 'center', justifyContent: 'center', gap: 10, minHeight: 88,
+    borderRadius: 18, borderWidth: 1.5, borderStyle: 'dashed',
+    padding: 24, alignItems: 'center', justifyContent: 'center', gap: 10, minHeight: 96,
   },
-  receiptIcon: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
-  receiptLabel: { fontSize: 14, fontWeight: '500' },
-  receiptThumb: { width: '100%', height: 160, borderRadius: 12 },
-  saveBtn: { marginTop: 4 },
+  receiptIcon: { width: 48, height: 48, borderRadius: 15, alignItems: 'center', justifyContent: 'center' },
+  receiptLabel: { fontSize: 14, fontWeight: '600' },
+  receiptThumb: { width: '100%', height: 180, borderRadius: 14 },
+  saveBtn: { marginTop: 6 },
 });
