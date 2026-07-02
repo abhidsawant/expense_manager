@@ -38,17 +38,17 @@ export default function HomeScreen({ navigation }: any) {
     return () => fabAnim.setValue(0);
   }, []));
 
-  const sections = useMemo(() => groupByDay(state.expenses), [state.expenses]);
-  const onRefresh = useCallback(() => { setRefreshing(true); setTimeout(() => setRefreshing(false), 500); }, []);
-
-  const monthTotal = useMemo(() => {
+  const currentMonthExpenses = useMemo(() => {
     const now = new Date();
     const start = format(startOfMonth(now), 'yyyy-MM-dd');
     const end = format(endOfMonth(now), 'yyyy-MM-dd');
-    return state.expenses
-      .filter(e => e.spent_on >= start && e.spent_on <= end)
-      .reduce((s, e) => s + e.amount_cents, 0);
+    return state.expenses.filter(e => e.spent_on >= start && e.spent_on <= end);
   }, [state.expenses]);
+
+  const sections = useMemo(() => groupByDay(currentMonthExpenses), [currentMonthExpenses]);
+  const onRefresh = useCallback(() => { setRefreshing(true); setTimeout(() => setRefreshing(false), 500); }, []);
+
+  const monthTotal = useMemo(() => currentMonthExpenses.reduce((s, e) => s + e.amount_cents, 0), [currentMonthExpenses]);
 
   const renderItem = useCallback(({ item }: { item: Expense }) => {
     const cat = categories.find(c => c.id === item.category_id);
@@ -116,7 +116,7 @@ export default function HomeScreen({ navigation }: any) {
       <View style={styles.summaryFooter}>
         <View style={styles.summaryStatItem}>
           <Ionicons name="layers-outline" size={13} color="rgba(255,255,255,0.6)" />
-          <Text style={styles.summaryStatText}>{state.expenses.length} total expenses</Text>
+          <Text style={styles.summaryStatText}>{currentMonthExpenses.length} expenses this month</Text>
         </View>
       </View>
     </View>
