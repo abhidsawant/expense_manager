@@ -64,18 +64,18 @@ export default function CategoryPickerModal({ visible, selected, onSelect, onClo
         {/* Header */}
         <View style={[styles.header, { paddingHorizontal: hPad }]}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-            {showNewForm && (
+            {showNewForm ? (
               <Pressable onPress={() => setShowNewForm(false)} style={[styles.backBtn, { backgroundColor: theme.surface }]}>
                 <Ionicons name="arrow-back" size={16} color={theme.text} />
               </Pressable>
-            )}
+            ) : null}
             <View>
               <Text style={[styles.title, { color: theme.text }]}>
                 {showNewForm ? t('categories.newTitle') : t('categoryPicker.title')}
               </Text>
-              {!showNewForm && (
+              {!showNewForm ? (
                 <Text style={[styles.subtitle, { color: theme.textMuted }]}>{categories.length} categories</Text>
-              )}
+              ) : null}
             </View>
           </View>
           <Pressable onPress={handleClose} style={[styles.closeBtn, { backgroundColor: theme.surface }]}>
@@ -117,7 +117,7 @@ export default function CategoryPickerModal({ visible, selected, onSelect, onClo
                   onPress={() => { setColor(c); setShowColorPicker(false); }}
                   style={[styles.colorSwatch, { backgroundColor: c, transform: [{ scale: color === c ? 1.2 : 1 }] }]}
                 >
-                  {color === c && <Ionicons name="checkmark" size={14} color="#fff" />}
+                  {color === c ? <Ionicons name="checkmark" size={14} color="#fff" /> : null}
                 </Pressable>
               ))}
               <Pressable
@@ -128,7 +128,7 @@ export default function CategoryPickerModal({ visible, selected, onSelect, onClo
               </Pressable>
             </View>
 
-            {showColorPicker && (
+            {showColorPicker ? (
               <View style={[styles.pickerCard, { backgroundColor: theme.bgCard, borderColor: theme.border }]}>
                 <ColorPicker
                   color={color}
@@ -142,7 +142,7 @@ export default function CategoryPickerModal({ visible, selected, onSelect, onClo
                   <Text style={styles.doneBtnText}>Done</Text>
                 </Pressable>
               </View>
-            )}
+            ) : null}
 
             {/* Icon */}
             <Text style={[styles.sectionLabel, { color: theme.textMuted }]}>{t('categories.iconLabel')}</Text>
@@ -208,11 +208,11 @@ export default function CategoryPickerModal({ visible, selected, onSelect, onClo
                   <Text style={[styles.cellLabel, { color: isSelected ? item.color : theme.text }]} numberOfLines={1}>
                     {item.name}
                   </Text>
-                  {isSelected && (
+                  {isSelected ? (
                     <View style={[styles.checkBadge, { backgroundColor: item.color }]}>
                       <Ionicons name="checkmark" size={10} color="#fff" />
                     </View>
-                  )}
+                  ) : null}
                 </Pressable>
               );
             }}

@@ -10,6 +10,7 @@ import { CategoriesContext } from '../../state/CategoriesContext';
 import { SettingsContext } from '../../state/ThemeContext';
 import { useTheme } from '../../theme/useTheme';
 import { useResponsive } from '../../theme/useResponsive';
+import { useExchangeRates } from '../../hooks/useExchangeRates';
 
 export default function ExpenseDetailScreen({ route, navigation }: any) {
   const { id } = route.params;
@@ -19,6 +20,7 @@ export default function ExpenseDetailScreen({ route, navigation }: any) {
   const theme = useTheme();
   const { rs, hPad } = useResponsive();
   const { t } = useTranslation();
+  const { convert, baseCurrency } = useExchangeRates();
   const [receiptVisible, setReceiptVisible] = useState(false);
 
   const expense = state.expenses.find(e => e.id === id);
@@ -58,7 +60,7 @@ export default function ExpenseDetailScreen({ route, navigation }: any) {
             </View>
           </View>
           <Text style={[styles.amountText, { fontSize: rs(48, 34, 56) }]}>
-            {settings.currency}{(expense.amount_cents / 100).toFixed(2)}
+            {settings.currency}{(convert(expense.amount_cents, expense.currency ?? baseCurrency) / 100).toFixed(2)}
           </Text>
           <View style={styles.amountCardDivider} />
           <View style={styles.amountCardFooter}>
@@ -68,7 +70,7 @@ export default function ExpenseDetailScreen({ route, navigation }: any) {
         </View>
 
         {/* Note */}
-        {expense.note && (
+        {expense.note ? (
           <View style={[styles.infoCard, { backgroundColor: theme.bgCard, borderColor: theme.border }]}>
             <View style={[styles.infoIconWrap, { backgroundColor: theme.primaryLight }]}>
               <Ionicons name="chatbubble-outline" size={16} color={theme.primary} />
@@ -78,10 +80,10 @@ export default function ExpenseDetailScreen({ route, navigation }: any) {
               <Text style={[styles.noteText, { color: theme.text }]}>{expense.note}</Text>
             </View>
           </View>
-        )}
+        ) : null}
 
         {/* Receipt */}
-        {expense.receipt_uri && (
+        {expense.receipt_uri ? (
           <View style={[styles.receiptContainer, { backgroundColor: theme.bgCard, borderColor: theme.border }]}>
             <View style={styles.receiptHeader}>
               <View style={[styles.infoIconWrap, { backgroundColor: theme.primaryLight }]}>
@@ -97,7 +99,7 @@ export default function ExpenseDetailScreen({ route, navigation }: any) {
               <Image source={{ uri: expense.receipt_uri }} style={styles.receipt} contentFit="cover" />
             </Pressable>
           </View>
-        )}
+        ) : null}
 
         {/* Delete */}
         <Pressable

@@ -85,7 +85,7 @@ export default function OnboardingScreen({ navigation }: any) {
                         >
                           <Text style={{ fontSize: 20 }}>{item.flag}</Text>
                           <Text style={[styles.dropdownText, { color: theme.text, fontSize: rs(15, 13) }]}>{item.label}</Text>
-                          {isSelected && <Text style={{ color: theme.primary }}>✓</Text>}
+                          {isSelected ? <Text style={{ color: theme.primary }}>✓</Text> : null}
                         </Pressable>
                       );
                     }}
@@ -111,11 +111,11 @@ export default function OnboardingScreen({ navigation }: any) {
                 onSubmitEditing={handleStart}
                 onFocus={() => setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 100)}
               />
-              {name.length > 0 && (
+              {name.length > 0 ? (
                 <Pressable onPress={() => setName('')}>
                   <Text style={[styles.clearBtn, { color: theme.textMuted }]}>✕</Text>
                 </Pressable>
-              )}
+              ) : null}
             </View>
             <Button label={t('onboarding.getStarted')} onPress={handleStart} disabled={name.trim().length < 2} style={styles.btn} />
           </View>

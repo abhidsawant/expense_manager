@@ -3,8 +3,12 @@ export type Theme = 'light' | 'dark' | 'system';
 export type Settings = {
   username: string;
   theme: Theme;
-  currency: string;
+  currency: string;       // display symbol e.g. '$'
+  baseCurrency: string;   // ISO code e.g. 'USD'
+  displayCurrency: string; // ISO code e.g. 'INR'
   language: string;
+  exchangeRates: Record<string, number>; // rates relative to baseCurrency
+  ratesFetchedAt: number; // unix ms timestamp
 };
 
 export type Category = {
@@ -18,6 +22,7 @@ export type Category = {
 export type Expense = {
   id: string;
   amount_cents: number;
+  currency: string;       // ISO code the expense was entered in e.g. 'INR'
   category_id: string;
   spent_on: string; // 'YYYY-MM-DD'
   note: string | null;

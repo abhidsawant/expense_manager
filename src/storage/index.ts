@@ -5,6 +5,7 @@ const SETTINGS_KEY   = '@expenseflow/v1/settings';
 const CATEGORIES_KEY = '@expenseflow/v1/categories';
 const EXPENSES_KEY   = '@expenseflow/v1/expenses';
 const SCHEMA_KEY     = '@expenseflow/v1/schema_version';
+const RATES_KEY      = '@expenseflow/v1/exchange_rates';
 
 export const DEFAULT_CATEGORIES: Category[] = [
   { id: 'food',     name: 'Food',      color: '#A855F7', icon: 'restaurant',      is_default: true },
@@ -41,6 +42,17 @@ export async function getExpenses(): Promise<Expense[]> {
 
 export async function setExpenses(expenses: Expense[]): Promise<void> {
   await AsyncStorage.setItem(EXPENSES_KEY, JSON.stringify(expenses));
+}
+
+export type CachedRates = { rates: Record<string, number>; base: string; fetchedAt: number };
+
+export async function getCachedRates(): Promise<CachedRates | null> {
+  const raw = await AsyncStorage.getItem(RATES_KEY);
+  return raw ? JSON.parse(raw) : null;
+}
+
+export async function setCachedRates(data: CachedRates): Promise<void> {
+  await AsyncStorage.setItem(RATES_KEY, JSON.stringify(data));
 }
 
 export async function clearAll(): Promise<void> {

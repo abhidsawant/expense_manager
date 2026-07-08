@@ -19,6 +19,7 @@ import { useResponsive } from '../../theme/useResponsive';
 import { Button } from '../../components/Button';
 import { Expense } from '../../types';
 import CategoryPickerModal from './CategoryPickerModal';
+import { useExchangeRates, convertCents } from '../../hooks/useExchangeRates';
 
 function uuid() { return Math.random().toString(36).slice(2) + Date.now().toString(36); }
 
@@ -28,11 +29,20 @@ export default function AddExpenseScreen({ route, navigation }: any) {
   const existing = expenseId ? state.expenses.find(e => e.id === expenseId) : undefined;
   const { categories } = useContext(CategoriesContext);
   const { settings } = useContext(SettingsContext);
+  const { convert, baseCurrency, baseSymbol, displaySymbol, displayCurrency } = useExchangeRates();
+  const isDifferentCurrency = displayCurrency !== baseCurrency;
+  // User always enters in display currency; we convert to base for storage
+  const inputSymbol = displaySymbol;
+  const inputCurrency = displayCurrency;
   const theme = useTheme();
   const { rs, hPad } = useResponsive();
   const { t } = useTranslation();
 
-  const [amount, setAmount] = useState(existing ? (existing.amount_cents / 100).toFixed(2) : '');
+  // When editing, show the stored amount converted to display currency
+  const existingDisplayAmount = existing
+    ? (convert(existing.amount_cents, existing.currency ?? baseCurrency) / 100).toFixed(2)
+    : '';
+  const [amount, setAmount] = useState(existing ? existingDisplayAmount : '');
   const [categoryId, setCategoryId] = useState(existing?.category_id ?? '');
   const [date, setDate] = useState(existing ? parseISO(existing.spent_on) : new Date());
   const [note, setNote] = useState(existing?.note ?? '');
@@ -41,8 +51,14 @@ export default function AddExpenseScreen({ route, navigation }: any) {
   const [showCatPicker, setShowCatPicker] = useState(false);
   const scrollRef = useRef<ScrollView>(null);
 
+  const parsedAmount = parseFloat(amount);
+  const isValid = parsedAmount > 0 && categoryId.length > 0;
   const selectedCat = categories.find(c => c.id === categoryId);
-  const isValid = parseFloat(amount) > 0 && categoryId.length > 0;
+  // Convert display currency input → base currency for storage
+  const displayCents = Math.round(parsedAmount * 100);
+  const baseCents = isDifferentCurrency
+    ? Math.round(convertCents(displayCents, displayCurrency, baseCurrency, settings.exchangeRates ?? {}, baseCurrency))
+    : displayCents;
 
   async function pickReceipt() {
     if (Platform.OS === 'ios') {
@@ -80,11 +96,11 @@ export default function AddExpenseScreen({ route, navigation }: any) {
 
   function handleSave() {
     if (!isValid) return;
-    const cents = Math.round(parseFloat(amount) * 100);
+    const cents = displayCents;
     if (existing) {
-      dispatch({ type: 'UPDATE', payload: { ...existing, amount_cents: cents, category_id: categoryId, spent_on: format(date, 'yyyy-MM-dd'), note: note || null, receipt_uri: receiptUri } });
+      dispatch({ type: 'UPDATE', payload: { ...existing, amount_cents: cents, currency: inputCurrency, category_id: categoryId, spent_on: format(date, 'yyyy-MM-dd'), note: note || null, receipt_uri: receiptUri } });
     } else {
-      dispatch({ type: 'ADD', payload: { id: uuid(), amount_cents: cents, category_id: categoryId, spent_on: format(date, 'yyyy-MM-dd'), note: note || null, receipt_uri: receiptUri, created_at: new Date().toISOString() } as Expense });
+      dispatch({ type: 'ADD', payload: { id: uuid(), amount_cents: cents, currency: inputCurrency, category_id: categoryId, spent_on: format(date, 'yyyy-MM-dd'), note: note || null, receipt_uri: receiptUri, created_at: new Date().toISOString() } as Expense });
     }
     navigation.goBack();
   }
@@ -110,16 +126,26 @@ export default function AddExpenseScreen({ route, navigation }: any) {
         <ScrollView ref={scrollRef} contentContainerStyle={[styles.form, { paddingHorizontal: hPad }]} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
           {/* Amount */}
           <View style={[styles.amountCard, { backgroundColor: selectedCat?.color ?? theme.primary, padding: rs(20, 14) }]}>
-            <Text style={[styles.amountCurrencyLabel, { fontSize: rs(24, 18) }]}>{settings.currency}</Text>
-            <TextInput
-              style={[styles.amountInput, { fontSize: rs(38, 28, 44) }]}
-              placeholder="0.00"
-              placeholderTextColor="rgba(255,255,255,0.5)"
-              value={amount}
-              onChangeText={setAmount}
-              keyboardType="decimal-pad"
-              autoFocus={!existing}
-            />
+            <View style={styles.amountTop}>
+              <Text style={[styles.amountCurrencyLabel, { fontSize: rs(24, 18) }]}>{inputSymbol}</Text>
+              <TextInput
+                style={[styles.amountInput, { fontSize: rs(38, 28, 44) }]}
+                placeholder="0.00"
+                placeholderTextColor="rgba(255,255,255,0.5)"
+                value={amount}
+                onChangeText={setAmount}
+                keyboardType="decimal-pad"
+                autoFocus={!existing}
+              />
+            </View>
+            <View style={styles.amountMeta}>
+              <Text style={styles.amountMetaText}>{inputCurrency}</Text>
+              {isDifferentCurrency && parsedAmount > 0 ? (
+                <Text style={styles.amountMetaText}>
+                  {`\u2248 ${baseSymbol}${(baseCents / 100).toFixed(2)} ${baseCurrency}`}
+                </Text>
+              ) : null}
+            </View>
           </View>
 
           {/* Category */}
@@ -148,7 +174,7 @@ export default function AddExpenseScreen({ route, navigation }: any) {
             <Ionicons name="chevron-forward" size={16} color={theme.textMuted} />
           </Pressable>
 
-          {showDatePicker && (
+          {showDatePicker ? (
             <DateTimePicker
               value={date}
               mode="date"
@@ -156,7 +182,7 @@ export default function AddExpenseScreen({ route, navigation }: any) {
               maximumDate={new Date()}
               onChange={(_, d) => { setShowDatePicker(Platform.OS === 'ios'); if (d) setDate(d); }}
             />
-          )}
+          ) : null}
 
           {/* Note */}
           <View style={[styles.noteWrap, { backgroundColor: theme.bgCard, borderColor: theme.border }]}>
@@ -221,9 +247,12 @@ const styles = StyleSheet.create({
   title: { fontSize: 17, fontWeight: '700' },
   form: { paddingHorizontal: 20, paddingTop: 20, gap: 12, paddingBottom: 48 },
 
-  amountCard: { borderRadius: 24, padding: 24, flexDirection: 'row', alignItems: 'center', gap: 4 },
+  amountCard: { borderRadius: 24, padding: 24, gap: 8 },
+  amountTop: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   amountCurrencyLabel: { color: 'rgba(255,255,255,0.8)', fontSize: 26, fontWeight: '700' },
   amountInput: { flex: 1, fontSize: 42, fontWeight: '800', color: '#fff', minWidth: 0 },
+  amountMeta: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  amountMetaText: { color: 'rgba(255,255,255,0.6)', fontSize: 12, fontWeight: '500' },
 
   row: { flexDirection: 'row', alignItems: 'center', gap: 12, borderRadius: 18, borderWidth: 1, padding: 16 },
   rowIconWrap: { width: 40, height: 40, borderRadius: 13, alignItems: 'center', justifyContent: 'center' },

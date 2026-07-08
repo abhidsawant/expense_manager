@@ -143,7 +143,7 @@ export default function ManageCategoriesScreen({ navigation }: any) {
                   onPress={() => { setEditing(prev => ({ ...prev, color: c })); setShowPicker(false); }}
                   style={[styles.colorSwatch, { backgroundColor: c, transform: [{ scale: editing?.color === c ? 1.2 : 1 }] }]}
                 >
-                  {editing?.color === c && <Ionicons name="checkmark" size={14} color="#fff" />}
+                  {editing?.color === c ? <Ionicons name="checkmark" size={14} color="#fff" /> : null}
                 </Pressable>
               ))}
               <Pressable
@@ -157,7 +157,7 @@ export default function ManageCategoriesScreen({ navigation }: any) {
               </Pressable>
             </View>
 
-            {showPicker && (
+            {showPicker ? (
               <View style={[styles.pickerCard, { backgroundColor: theme.bgCard, borderColor: theme.border }]}>
                 <ColorPicker
                   color={editing?.color ?? COLORS[0]}
@@ -171,7 +171,7 @@ export default function ManageCategoriesScreen({ navigation }: any) {
                   <Text style={styles.doneBtnText}>Done</Text>
                 </Pressable>
               </View>
-            )}
+            ) : null}
 
             {/* Icon */}
             <Text style={[styles.sectionLabel, { color: theme.textMuted }]}>{t('categories.iconLabel')}</Text>

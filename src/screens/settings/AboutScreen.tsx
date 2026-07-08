@@ -84,7 +84,7 @@ export default function AboutScreen({ navigation }: any) {
                 <Text style={[styles.linkText, { color: theme.text, fontSize: rs(15, 13, 17) }]}>{t(`about.${key}` as any)}</Text>
                 <Ionicons name="arrow-forward-outline" size={15} color={theme.textMuted} />
               </Pressable>
-              {idx < LINKS.length - 1 && <View style={[styles.divider, { backgroundColor: theme.border }]} />}
+              {idx < LINKS.length - 1 ? <View style={[styles.divider, { backgroundColor: theme.border }]} /> : null}
             </View>
           ))}
         </View>

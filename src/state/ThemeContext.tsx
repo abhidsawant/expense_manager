@@ -1,7 +1,7 @@
 import React, { createContext, useReducer, useEffect, useContext } from 'react';
 import { useColorScheme } from 'react-native';
 import { Settings } from '../types';
-import { getSettings, setSettings } from '../storage';
+import { getSettings, setSettings, getCachedRates } from '../storage';
 import { lightTheme, darkTheme, AppTheme } from '../theme/colors';
 import i18n from '../i18n';
 
@@ -17,7 +17,11 @@ function reducer(state: Settings, action: Action): Settings {
   }
 }
 
-const defaultSettings: Settings = { username: '', theme: 'system', currency: '$', language: 'en' };
+const defaultSettings: Settings = {
+  username: '', theme: 'system', currency: '$',
+  baseCurrency: 'USD', displayCurrency: 'USD',
+  language: 'en', exchangeRates: {}, ratesFetchedAt: 0,
+};
 
 export const SettingsContext = createContext<{
   settings: Settings;
@@ -33,8 +37,18 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
   const colorScheme = useColorScheme();
 
   useEffect(() => {
-    getSettings().then(data => {
-      if (data) dispatch({ type: 'HYDRATE', payload: data });
+    getSettings().then(async data => {
+      if (data) {
+        // backfill missing fields for existing users
+        const cached = await getCachedRates();
+        dispatch({
+          type: 'HYDRATE', payload: {
+            ...defaultSettings,
+            ...data,
+            ...(cached && !data.ratesFetchedAt ? { exchangeRates: cached.rates, ratesFetchedAt: cached.fetchedAt } : {}),
+          },
+        });
+      }
       setHydrated(true);
     });
   }, []);

@@ -12,6 +12,7 @@ import { useTheme } from '../../theme/useTheme';
 import { useResponsive } from '../../theme/useResponsive';
 import { EmptyState } from '../../components/EmptyState';
 import { Expense } from '../../types';
+import { useExchangeRates } from '../../hooks/useExchangeRates';
 
 function groupByDay(expenses: Expense[]) {
   const map: Record<string, Expense[]> = {};
@@ -26,6 +27,7 @@ export default function HomeScreen({ navigation }: any) {
   const { state } = useContext(ExpensesContext);
   const { categories } = useContext(CategoriesContext);
   const { settings } = useContext(SettingsContext);
+  const { convert, displayCurrency, baseCurrency } = useExchangeRates();
   const theme = useTheme();
   const { rs, hPad } = useResponsive();
   const insets = useSafeAreaInsets();
@@ -48,7 +50,7 @@ export default function HomeScreen({ navigation }: any) {
   const sections = useMemo(() => groupByDay(currentMonthExpenses), [currentMonthExpenses]);
   const onRefresh = useCallback(() => { setRefreshing(true); setTimeout(() => setRefreshing(false), 500); }, []);
 
-  const monthTotal = useMemo(() => currentMonthExpenses.reduce((s, e) => s + e.amount_cents, 0), [currentMonthExpenses]);
+  const monthTotal = useMemo(() => currentMonthExpenses.reduce((s, e) => s + convert(e.amount_cents, e.currency ?? baseCurrency), 0), [currentMonthExpenses, convert, baseCurrency]);
 
   const renderItem = useCallback(({ item }: { item: Expense }) => {
     const cat = categories.find(c => c.id === item.category_id);
@@ -73,23 +75,22 @@ export default function HomeScreen({ navigation }: any) {
         </View>
         <View style={styles.rowRight}>
           <Text style={[styles.amount, { color: theme.text, fontSize: rs(15, 13) }]}>
-            {settings.currency}{(item.amount_cents / 100).toFixed(2)}
+            {settings.currency}{(convert(item.amount_cents, item.currency ?? baseCurrency) / 100).toFixed(2)}
           </Text>
-          {item.receipt_uri && (
+          {item.receipt_uri ? (
             <Ionicons name="receipt-outline" size={11} color={theme.textMuted} />
-          )}
+          ) : null}
         </View>
       </Pressable>
     );
   }, [categories, theme, settings.currency, rs]);
 
   const renderSectionHeader = useCallback(({ section: { title, data } }: any) => {
-    const total = data.reduce((s: number, e: Expense) => s + e.amount_cents, 0);
     return (
       <View style={[styles.sectionHeader, { paddingHorizontal: hPad - 16 }]}>
         <Text style={[styles.sectionDate, { color: theme.textMuted }]}>{format(parseISO(title), 'EEE, MMM d')}</Text>
         <Text style={[styles.sectionTotal, { color: theme.textMuted }]}>
-          {settings.currency}{(total / 100).toFixed(2)}
+          {settings.currency}{(data.reduce((s: number, e: Expense) => s + convert(e.amount_cents, e.currency ?? baseCurrency), 0) / 100).toFixed(2)}
         </Text>
       </View>
     );

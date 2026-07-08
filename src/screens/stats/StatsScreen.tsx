@@ -10,6 +10,7 @@ import { SettingsContext } from '../../state/ThemeContext';
 import { useTheme } from '../../theme/useTheme';
 import { useResponsive } from '../../theme/useResponsive';
 import { EmptyState } from '../../components/EmptyState';
+import { useExchangeRates } from '../../hooks/useExchangeRates';
 
 export default function StatsScreen() {
   const { state } = useContext(ExpensesContext);
@@ -18,6 +19,7 @@ export default function StatsScreen() {
   const theme = useTheme();
   const { rs, hPad, isSmall } = useResponsive();
   const { t } = useTranslation();
+  const { convert, baseCurrency } = useExchangeRates();
   const [selectedDate, setSelectedDate] = useState(new Date());
 
   function shiftMonth(dir: 1 | -1) {
@@ -28,16 +30,18 @@ export default function StatsScreen() {
     const start = format(startOfMonth(selectedDate), 'yyyy-MM-dd');
     const end = format(endOfMonth(selectedDate), 'yyyy-MM-dd');
     const filtered = state.expenses.filter(e => e.spent_on >= start && e.spent_on <= end);
-    const total = filtered.reduce((s, e) => s + e.amount_cents, 0);
+    const total = filtered.reduce((s, e) => s + convert(e.amount_cents, e.currency ?? baseCurrency), 0);
     const map: Record<string, number> = {};
-    filtered.forEach(e => { map[e.category_id] = (map[e.category_id] ?? 0) + e.amount_cents; });
+    filtered.forEach(e => {
+      map[e.category_id] = (map[e.category_id] ?? 0) + convert(e.amount_cents, e.currency ?? baseCurrency);
+    });
     const byCat = Object.entries(map).map(([id, amount]) => ({
       cat: categories.find(c => c.id === id), amount,
       percent: total > 0 ? (amount / total) * 100 : 0,
     })).sort((a, b) => b.amount - a.amount);
     const daysInMonth = endOfMonth(selectedDate).getDate();
     return { total, byCat, txCount: filtered.length, avgPerDay: total / daysInMonth };
-  }, [state.expenses, categories, selectedDate]);
+  }, [state.expenses, categories, selectedDate, convert]);
 
   const isCurrentMonth = format(selectedDate, 'yyyy-MM') >= format(new Date(), 'yyyy-MM');
 
