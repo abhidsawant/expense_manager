@@ -21,6 +21,7 @@ const defaultSettings: Settings = {
   username: '', theme: 'system', currency: '$',
   baseCurrency: 'USD', displayCurrency: 'USD',
   language: 'en', exchangeRates: {}, ratesFetchedAt: 0,
+  holidayCountry: 'US',
 };
 
 export const SettingsContext = createContext<{

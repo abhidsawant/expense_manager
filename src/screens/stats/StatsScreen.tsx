@@ -10,7 +10,7 @@ import { SettingsContext } from '../../state/ThemeContext';
 import { useTheme } from '../../theme/useTheme';
 import { useResponsive } from '../../theme/useResponsive';
 import { EmptyState } from '../../components/EmptyState';
-import { useExchangeRates } from '../../hooks/useExchangeRates';
+import { useExchangeRates, useExchangeRate } from '../../hooks/useExchangeRates';
 
 export default function StatsScreen() {
   const { state } = useContext(ExpensesContext);
@@ -19,7 +19,8 @@ export default function StatsScreen() {
   const theme = useTheme();
   const { rs, hPad, isSmall } = useResponsive();
   const { t } = useTranslation();
-  const { convert, baseCurrency } = useExchangeRates();
+  const { convert, baseCurrency, displayCurrency } = useExchangeRates();
+  const { rate, date, offline } = useExchangeRate(baseCurrency, displayCurrency);
   const [selectedDate, setSelectedDate] = useState(new Date());
 
   function shiftMonth(dir: 1 | -1) {
@@ -76,6 +77,21 @@ export default function StatsScreen() {
               <Text style={[styles.totalAmount, { fontSize: rs(40, 28, 48) }]}>
                 {settings.currency}{(total / 100).toFixed(2)}
               </Text>
+              {rate !== null && baseCurrency !== displayCurrency ? (
+                <View style={styles.convertedRow}>
+                  <Text style={styles.convertedAmount}>
+                    {new Intl.NumberFormat('en', { style: 'currency', currency: displayCurrency }).format((total / 100) * rate)}
+                  </Text>
+                  {offline ? (
+                    <View style={styles.offlineBadge}>
+                      <Text style={styles.offlineBadgeText}>offline</Text>
+                    </View>
+                  ) : null}
+                </View>
+              ) : null}
+              {date && baseCurrency !== displayCurrency ? (
+                <Text style={styles.rateDate}>Exchange rate as of {date}</Text>
+              ) : null}
               <View style={styles.totalDivider} />
               {/* Mini stats row */}
               <View style={styles.statsRow}>
@@ -150,6 +166,11 @@ const styles = StyleSheet.create({
   },
   totalLabel: { color: 'rgba(255,255,255,0.6)', fontSize: 13, fontWeight: '600', letterSpacing: 0.5 },
   totalAmount: { color: '#fff', fontWeight: '800', letterSpacing: -1, marginTop: 2 },
+  convertedRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 2 },
+  convertedAmount: { color: 'rgba(255,255,255,0.85)', fontSize: 18, fontWeight: '600' },
+  offlineBadge: { backgroundColor: 'rgba(255,255,255,0.2)', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 8 },
+  offlineBadgeText: { color: '#fff', fontSize: 10, fontWeight: '700', letterSpacing: 0.5 },
+  rateDate: { color: 'rgba(255,255,255,0.5)', fontSize: 11, fontWeight: '500', marginTop: 2 },
   totalDivider: { height: 1, backgroundColor: 'rgba(255,255,255,0.15)', marginVertical: 14 },
   statsRow: { flexDirection: 'row', alignItems: 'center' },
   statItem: { flex: 1, alignItems: 'center', gap: 3 },

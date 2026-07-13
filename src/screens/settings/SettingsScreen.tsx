@@ -1,5 +1,5 @@
 import React, { useContext, useState } from 'react';
-import { View, Text, ScrollView, Pressable, StyleSheet, Alert, Modal, FlatList } from 'react-native';
+import { View, Text, ScrollView, Pressable, StyleSheet, Alert, Modal, FlatList, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
@@ -11,37 +11,80 @@ import { useResponsive } from '../../theme/useResponsive';
 import { clearAll } from '../../storage';
 import { Theme } from '../../types';
 import Constants from 'expo-constants';
-import { symbolForCode } from '../../hooks/useExchangeRates';
+import { symbolForCode, useCurrencies } from '../../hooks/useExchangeRates';
+import { usePublicHolidays } from '../../hooks/usePublicHolidays';
 
 import { LANGUAGES } from '../../i18n';
-
-const CURRENCIES = [
-  { code: 'USD', symbol: '$',  name: 'US Dollar' },
-  { code: 'EUR', symbol: '€',  name: 'Euro' },
-  { code: 'GBP', symbol: '£',  name: 'British Pound' },
-  { code: 'JPY', symbol: '¥',  name: 'Japanese Yen' },
-  { code: 'INR', symbol: '₹',  name: 'Indian Rupee' },
-  { code: 'AUD', symbol: 'A$', name: 'Australian Dollar' },
-  { code: 'CAD', symbol: 'C$', name: 'Canadian Dollar' },
-  { code: 'CHF', symbol: 'Fr', name: 'Swiss Franc' },
-  { code: 'CNY', symbol: '¥',  name: 'Chinese Yuan' },
-  { code: 'SGD', symbol: 'S$', name: 'Singapore Dollar' },
-];
 
 const THEMES: Theme[] = ['light', 'dark', 'system'];
 
 type DropdownItem = { label: string; value: string; sublabel?: string };
+
+const COUNTRIES: DropdownItem[] = [
+  { value: 'AR', label: '🇦🇷', sublabel: 'Argentina' },
+  { value: 'AU', label: '🇦🇺', sublabel: 'Australia' },
+  { value: 'AT', label: '🇦🇹', sublabel: 'Austria' },
+  { value: 'BD', label: '🇧🇩', sublabel: 'Bangladesh' },
+  { value: 'BE', label: '🇧🇪', sublabel: 'Belgium' },
+  { value: 'BR', label: '🇧🇷', sublabel: 'Brazil' },
+  { value: 'CA', label: '🇨🇦', sublabel: 'Canada' },
+  { value: 'CN', label: '🇨🇳', sublabel: 'China' },
+  { value: 'HR', label: '🇭🇷', sublabel: 'Croatia' },
+  { value: 'CZ', label: '🇨🇿', sublabel: 'Czechia' },
+  { value: 'DK', label: '🇩🇰', sublabel: 'Denmark' },
+  { value: 'EG', label: '🇪🇬', sublabel: 'Egypt' },
+  { value: 'FI', label: '🇫🇮', sublabel: 'Finland' },
+  { value: 'FR', label: '🇫🇷', sublabel: 'France' },
+  { value: 'DE', label: '🇩🇪', sublabel: 'Germany' },
+  { value: 'GR', label: '🇬🇷', sublabel: 'Greece' },
+  { value: 'HK', label: '🇭🇰', sublabel: 'Hong Kong' },
+  { value: 'HU', label: '🇭🇺', sublabel: 'Hungary' },
+  { value: 'IN', label: '🇮🇳', sublabel: 'India' },
+  { value: 'ID', label: '🇮🇩', sublabel: 'Indonesia' },
+  { value: 'IE', label: '🇮🇪', sublabel: 'Ireland' },
+  { value: 'IL', label: '🇮🇱', sublabel: 'Israel' },
+  { value: 'IT', label: '🇮🇹', sublabel: 'Italy' },
+  { value: 'JP', label: '🇯🇵', sublabel: 'Japan' },
+  { value: 'KE', label: '🇰🇪', sublabel: 'Kenya' },
+  { value: 'KR', label: '🇰🇷', sublabel: 'South Korea' },
+  { value: 'MX', label: '🇲🇽', sublabel: 'Mexico' },
+  { value: 'NG', label: '🇳🇬', sublabel: 'Nigeria' },
+  { value: 'NL', label: '🇳🇱', sublabel: 'Netherlands' },
+  { value: 'NO', label: '🇳🇴', sublabel: 'Norway' },
+  { value: 'NZ', label: '🇳🇿', sublabel: 'New Zealand' },
+  { value: 'PH', label: '🇵🇭', sublabel: 'Philippines' },
+  { value: 'PK', label: '🇵🇰', sublabel: 'Pakistan' },
+  { value: 'PL', label: '🇵🇱', sublabel: 'Poland' },
+  { value: 'PT', label: '🇵🇹', sublabel: 'Portugal' },
+  { value: 'RO', label: '🇷🇴', sublabel: 'Romania' },
+  { value: 'RU', label: '🇷🇺', sublabel: 'Russia' },
+  { value: 'SA', label: '🇸🇦', sublabel: 'Saudi Arabia' },
+  { value: 'SG', label: '🇸🇬', sublabel: 'Singapore' },
+  { value: 'ZA', label: '🇿🇦', sublabel: 'South Africa' },
+  { value: 'ES', label: '🇪🇸', sublabel: 'Spain' },
+  { value: 'SE', label: '🇸🇪', sublabel: 'Sweden' },
+  { value: 'CH', label: '🇨🇭', sublabel: 'Switzerland' },
+  { value: 'TH', label: '🇹🇭', sublabel: 'Thailand' },
+  { value: 'TR', label: '🇹🇷', sublabel: 'Türkiye' },
+  { value: 'TW', label: '🇹🇼', sublabel: 'Taiwan' },
+  { value: 'UA', label: '🇺🇦', sublabel: 'Ukraine' },
+  { value: 'GB', label: '🇬🇧', sublabel: 'United Kingdom' },
+  { value: 'US', label: '🇺🇸', sublabel: 'United States' },
+  { value: 'VN', label: '🇻🇳', sublabel: 'Vietnam' },
+];
 
 function DropdownPicker({
   items,
   selectedValue,
   onSelect,
   placeholder,
+  loading,
 }: {
   items: DropdownItem[];
   selectedValue: string;
   onSelect: (value: string) => void;
   placeholder?: string;
+  loading?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const theme = useTheme();
@@ -50,11 +93,13 @@ function DropdownPicker({
   return (
     <>
       <Pressable
-        onPress={() => setOpen(true)}
+        onPress={() => !loading && setOpen(true)}
         style={[styles.dropdownTrigger, { backgroundColor: theme.surface, borderColor: theme.border }]}
       >
         <View style={styles.dropdownTriggerContent}>
-          {selected ? (
+          {loading ? (
+            <ActivityIndicator size="small" color={theme.textMuted} />
+          ) : selected ? (
             <>
               <Text style={[styles.dropdownTriggerText, { color: theme.text }]}>{selected.label}</Text>
               {selected.sublabel ? (
@@ -107,6 +152,8 @@ export default function SettingsScreen({ navigation }: any) {
   const theme = useTheme();
   const { rs, hPad } = useResponsive();
   const { t } = useTranslation();
+  const { currencies, loading: currenciesLoading, error: currenciesError, retry: retryCurrencies } = useCurrencies();
+  const { error: holidayError, loading: holidayLoading } = usePublicHolidays(new Date().getFullYear(), settings.holidayCountry ?? 'US');
 
   function handleClearData() {
     Alert.alert(t('settings.clearTitle'), t('settings.clearMsg'), [
@@ -140,7 +187,9 @@ export default function SettingsScreen({ navigation }: any) {
     </Pressable>
   );
 
-  const currencyItems: DropdownItem[] = CURRENCIES.map(c => ({ value: c.code, label: `${c.symbol} ${c.code}`, sublabel: c.name }));
+  const currencyItems: DropdownItem[] = Object.entries(currencies)
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([code, name]) => ({ value: code, label: `${symbolForCode(code)} ${code}`, sublabel: name }));
   const languageItems: DropdownItem[] = LANGUAGES.map(l => ({ value: l.code, label: l.flag, sublabel: l.label }));
 
   return (
@@ -209,7 +258,14 @@ export default function SettingsScreen({ navigation }: any) {
             selectedValue={settings.baseCurrency ?? 'USD'}
             onSelect={value => dispatch({ type: 'UPDATE', payload: { baseCurrency: value, ratesFetchedAt: 0 } })}
             placeholder="Select base currency"
+            loading={currenciesLoading}
           />
+          {currenciesError ? (
+            <Pressable onPress={retryCurrencies} style={[styles.errorBanner, { backgroundColor: theme.dangerLight }]}>
+              <Ionicons name="warning-outline" size={14} color={theme.danger} />
+              <Text style={[styles.errorText, { color: theme.danger }]}>Unable to load currencies — tap to retry</Text>
+            </Pressable>
+          ) : null}
 
           <View style={[styles.currencyDivider, { backgroundColor: theme.border }]} />
 
@@ -230,6 +286,7 @@ export default function SettingsScreen({ navigation }: any) {
             selectedValue={settings.displayCurrency ?? settings.baseCurrency ?? 'USD'}
             onSelect={value => dispatch({ type: 'UPDATE', payload: { displayCurrency: value, currency: symbolForCode(value) } })}
             placeholder="Select display currency"
+            loading={currenciesLoading}
           />
         </View>
 
@@ -242,6 +299,27 @@ export default function SettingsScreen({ navigation }: any) {
             onSelect={value => dispatch({ type: 'UPDATE', payload: { language: value } })}
             placeholder="Select language"
           />
+        </View>
+
+        {/* Public Holidays Country */}
+        <SectionLabel title={t('settings.country')} />
+        <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.border }]}>
+          <Text style={[styles.cardHint, { color: theme.textMuted }]}>Holiday names shown on Home screen section headers</Text>
+          <DropdownPicker
+            items={COUNTRIES}
+            selectedValue={settings.holidayCountry ?? 'US'}
+            onSelect={value => dispatch({ type: 'UPDATE', payload: { holidayCountry: value } })}
+            placeholder="Select country"
+            loading={holidayLoading}
+          />
+          {holidayError ? (
+            <View style={[styles.errorBanner, { backgroundColor: theme.dangerLight }]}>
+              <Ionicons name="warning-outline" size={14} color={theme.danger} />
+              <Text style={[styles.errorText, { color: theme.danger }]}>
+                Holidays not available for this country
+              </Text>
+            </View>
+          ) : null}
         </View>
 
         {/* Data */}
@@ -311,4 +389,7 @@ const styles = StyleSheet.create({
   navLabel: { flex: 1, fontSize: 15, fontWeight: '500' },
 
   version: { fontSize: 12, textAlign: 'center', marginTop: 12 },
+
+  errorBanner: { flexDirection: 'row', alignItems: 'center', gap: 6, padding: 10, borderRadius: 10 },
+  errorText: { fontSize: 12, fontWeight: '600', flex: 1 },
 });

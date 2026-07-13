@@ -71,6 +71,7 @@ export default {
     clearMsg: 'This will delete ALL expenses and categories.',
     about: 'ABOUT',
     language: 'LANGUAGE',
+    country: 'COUNTRY', 
   },
   categories: {
     title: 'Categories',

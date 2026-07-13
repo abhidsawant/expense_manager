@@ -1,5 +1,5 @@
 import React, { useContext, useState } from 'react';
-import { View, Text, ScrollView, Pressable, StyleSheet, Alert, Modal } from 'react-native';
+import { View, Text, ScrollView, Pressable, StyleSheet, Alert, Modal, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
@@ -11,6 +11,41 @@ import { SettingsContext } from '../../state/ThemeContext';
 import { useTheme } from '../../theme/useTheme';
 import { useResponsive } from '../../theme/useResponsive';
 import { useExchangeRates } from '../../hooks/useExchangeRates';
+import { Expense } from '../../types';
+
+type SyncState = 'idle' | 'syncing' | 'synced' | 'failed';
+type SyncAction = { type: 'SYNC' } | { type: 'SUCCESS' } | { type: 'FAIL' };
+
+function syncReducer(_: SyncState, action: SyncAction): SyncState {
+  switch (action.type) {
+    case 'SYNC':    return 'syncing';
+    case 'SUCCESS': return 'synced';
+    case 'FAIL':    return 'failed';
+    default:        return _;
+  }
+}
+
+async function postExpense(expense: Expense): Promise<number> {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 10000);
+  try {
+    const res = await fetch('https://jsonplaceholder.typicode.com/posts', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        title: expense.note ?? 'Untitled',
+        body: JSON.stringify({ amount_cents: expense.amount_cents, spent_on: expense.spent_on }),
+        userId: 1,
+      }),
+      signal: controller.signal,
+    });
+    if (!res.ok) throw new Error(`Sync failed: HTTP ${res.status}`);
+    const { id } = await res.json();
+    return id as number;
+  } finally {
+    clearTimeout(timeout);
+  }
+}
 
 export default function ExpenseDetailScreen({ route, navigation }: any) {
   const { id } = route.params;
@@ -24,8 +59,24 @@ export default function ExpenseDetailScreen({ route, navigation }: any) {
   const [receiptVisible, setReceiptVisible] = useState(false);
 
   const expense = state.expenses.find(e => e.id === id);
+  const [syncState, syncDispatch] = React.useReducer(syncReducer,
+    expense?.remote_id ? 'synced' : 'idle'
+  );
+
   if (!expense) return null;
   const cat = categories.find(c => c.id === expense.category_id);
+
+  async function handleSync() {
+    if (syncState === 'syncing' || syncState === 'synced') return;
+    syncDispatch({ type: 'SYNC' });
+    try {
+      const remoteId = await postExpense(expense!);
+      dispatch({ type: 'UPDATE', payload: { ...expense!, remote_id: remoteId } });
+      syncDispatch({ type: 'SUCCESS' });
+    } catch {
+      syncDispatch({ type: 'FAIL' });
+    }
+  }
 
   function handleDelete() {
     Alert.alert(t('expenseDetail.deleteTitle'), t('expenseDetail.deleteMsg'), [
@@ -33,6 +84,14 @@ export default function ExpenseDetailScreen({ route, navigation }: any) {
       { text: t('common.delete'), style: 'destructive', onPress: () => { dispatch({ type: 'DELETE', payload: id }); navigation.goBack(); } },
     ]);
   }
+
+  const syncConfig: Record<SyncState, { label: string; icon: string; bg: string; fg: string }> = {
+    idle:    { label: 'Sync to cloud',  icon: 'cloud-upload-outline', bg: theme.primaryLight, fg: theme.primary },
+    syncing: { label: 'Syncing…',       icon: 'cloud-upload-outline', bg: theme.primaryLight, fg: theme.primary },
+    synced:  { label: 'Synced',         icon: 'checkmark-circle',     bg: '#dcfce7',          fg: '#16a34a'     },
+    failed:  { label: 'Retry',          icon: 'cloud-offline-outline', bg: theme.dangerLight,  fg: theme.danger  },
+  };
+  const sc = syncConfig[syncState];
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: theme.bg }]}>
@@ -68,6 +127,26 @@ export default function ExpenseDetailScreen({ route, navigation }: any) {
             <Text style={styles.amountDate}>{format(parseISO(expense.spent_on), 'EEEE, MMMM d yyyy')}</Text>
           </View>
         </View>
+
+        {/* Sync to cloud */}
+        <Pressable
+          onPress={handleSync}
+          disabled={syncState === 'syncing' || syncState === 'synced'}
+          style={({ pressed }) => [
+            styles.syncBtn,
+            { backgroundColor: sc.bg, borderColor: sc.fg, opacity: pressed ? 0.8 : 1 },
+          ]}
+        >
+          {syncState === 'syncing' ? (
+            <ActivityIndicator size="small" color={sc.fg} />
+          ) : (
+            <Ionicons name={sc.icon as any} size={18} color={sc.fg} />
+          )}
+          <Text style={[styles.syncLabel, { color: sc.fg }]}>{sc.label}</Text>
+          {expense.remote_id && syncState === 'synced' ? (
+            <Text style={[styles.syncId, { color: sc.fg }]}>#{expense.remote_id}</Text>
+          ) : null}
+        </Pressable>
 
         {/* Note */}
         {expense.note ? (
@@ -161,6 +240,13 @@ const styles = StyleSheet.create({
   amountCardDivider: { height: 1, backgroundColor: 'rgba(255,255,255,0.2)', marginVertical: 4 },
   amountCardFooter: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   amountDate: { color: 'rgba(255,255,255,0.65)', fontSize: 13, fontWeight: '500' },
+
+  syncBtn: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+    gap: 8, padding: 14, borderRadius: 18, borderWidth: 1.5,
+  },
+  syncLabel: { fontSize: 14, fontWeight: '700' },
+  syncId: { fontSize: 12, fontWeight: '500', opacity: 0.7 },
 
   infoCard: { flexDirection: 'row', gap: 12, padding: 16, borderRadius: 20, borderWidth: 1, alignItems: 'flex-start' },
   infoIconWrap: { width: 36, height: 36, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },

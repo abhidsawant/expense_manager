@@ -71,6 +71,7 @@ export default {
     clearMsg: 'Cela supprimera TOUTES les dépenses et catégories.',
     about: 'À PROPOS',
     language: 'LANGUE',
+    country: 'PAYS',
   },
   categories: {
     title: 'Catégories',

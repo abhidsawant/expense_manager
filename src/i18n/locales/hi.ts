@@ -71,6 +71,7 @@ export default {
     clearMsg: 'यह सभी खर्चे और श्रेणियां हटा देगा।',
     about: 'के बारे में',
     language: 'भाषा',
+    country: 'देश',
   },
   categories: {
     title: 'श्रेणियां',

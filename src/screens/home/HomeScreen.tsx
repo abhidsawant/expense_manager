@@ -13,7 +13,7 @@ import { useResponsive } from '../../theme/useResponsive';
 import { EmptyState } from '../../components/EmptyState';
 import { Expense } from '../../types';
 import { useExchangeRates } from '../../hooks/useExchangeRates';
-
+import { usePublicHolidays } from '../../hooks/usePublicHolidays';
 
 function groupByDay(expenses: Expense[]) {
   const map: Record<string, Expense[]> = {};
@@ -23,7 +23,6 @@ function groupByDay(expenses: Expense[]) {
   });
   return Object.entries(map).map(([date, data]) => ({ title: date, data }));
 }
-
 
 export default function HomeScreen({ navigation }: any) {
   const { state } = useContext(ExpensesContext);
@@ -36,6 +35,8 @@ export default function HomeScreen({ navigation }: any) {
   const { t } = useTranslation();
   const [refreshing, setRefreshing] = React.useState(false);
   const fabAnim = useRef(new Animated.Value(0)).current;
+
+  const cc = settings.holidayCountry ?? 'US';
 
   useFocusEffect(useCallback(() => {
     Animated.spring(fabAnim, { toValue: 1, useNativeDriver: true, tension: 80, friction: 6 }).start();
@@ -50,9 +51,28 @@ export default function HomeScreen({ navigation }: any) {
   }, [state.expenses]);
 
   const sections = useMemo(() => groupByDay(currentMonthExpenses), [currentMonthExpenses]);
+
+  // Derive the year from the actual expenses being displayed
+  const displayYear = useMemo(() => {
+    if (sections.length === 0) return new Date().getFullYear();
+    return new Date(sections[0].title).getFullYear();
+  }, [sections]);
+
+  const { byDate } = usePublicHolidays(displayYear, cc);
+
+  // Combine sections with holiday annotations in one memoised pass —
+  // byDate is a Map so each lookup is O(1); no lag even with 100+ holidays.
+  const annotatedSections = useMemo(
+    () => sections.map(s => ({ ...s, holiday: byDate.get(s.title) ?? null })),
+    [sections, byDate],
+  );
+
   const onRefresh = useCallback(() => { setRefreshing(true); setTimeout(() => setRefreshing(false), 500); }, []);
 
-  const monthTotal = useMemo(() => currentMonthExpenses.reduce((s, e) => s + convert(e.amount_cents, e.currency ?? baseCurrency), 0), [currentMonthExpenses, convert, baseCurrency]);
+  const monthTotal = useMemo(
+    () => currentMonthExpenses.reduce((s, e) => s + convert(e.amount_cents, e.currency ?? baseCurrency), 0),
+    [currentMonthExpenses, convert, baseCurrency],
+  );
 
   const renderItem = useCallback(({ item }: { item: Expense }) => {
     const cat = categories.find(c => c.id === item.category_id);
@@ -87,16 +107,22 @@ export default function HomeScreen({ navigation }: any) {
     );
   }, [categories, theme, settings.currency, rs]);
 
-  const renderSectionHeader = useCallback(({ section: { title, data } }: any) => {
+  const renderSectionHeader = useCallback(({ section }: any) => {
+    const { title, data, holiday } = section;
     return (
       <View style={[styles.sectionHeader, { paddingHorizontal: hPad - 16 }]}>
-        <Text style={[styles.sectionDate, { color: theme.textMuted }]}>{format(parseISO(title), 'EEE, MMM d')}</Text>
+        <View style={styles.sectionDateRow}>
+          <Text style={[styles.sectionDate, { color: theme.textMuted }]}>{format(parseISO(title), 'EEE, MMM d')}</Text>
+          {holiday ? (
+            <Text style={[styles.sectionHoliday, { color: theme.primary }]}>· {holiday}</Text>
+          ) : null}
+        </View>
         <Text style={[styles.sectionTotal, { color: theme.textMuted }]}>
           {settings.currency}{(data.reduce((s: number, e: Expense) => s + convert(e.amount_cents, e.currency ?? baseCurrency), 0) / 100).toFixed(2)}
         </Text>
       </View>
     );
-  }, [theme, settings.currency, hPad]);
+  }, [theme, settings.currency, hPad, convert, baseCurrency]);
 
   const ListHeader = (
     <View style={[styles.summaryCard, { backgroundColor: theme.primary, shadowColor: theme.shadow, marginHorizontal: 4 }]}>
@@ -132,12 +158,12 @@ export default function HomeScreen({ navigation }: any) {
       </View>
 
       <SectionList
-        sections={sections}
+        sections={annotatedSections}
         keyExtractor={item => item.id}
         renderItem={renderItem}
         renderSectionHeader={renderSectionHeader}
         ListHeaderComponent={ListHeader}
-        contentContainerStyle={[styles.list, { paddingHorizontal: hPad - 4 }, sections.length === 0 && styles.listEmpty]}
+        contentContainerStyle={[styles.list, { paddingHorizontal: hPad - 4 }, annotatedSections.length === 0 && styles.listEmpty]}
         ListEmptyComponent={<EmptyState message={t('home.empty')} />}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.primary} />}
         stickySectionHeadersEnabled={false}
@@ -175,7 +201,9 @@ const styles = StyleSheet.create({
   summaryStatText: { color: 'rgba(255,255,255,0.55)', fontSize: 12, fontWeight: '500' },
 
   sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 10, marginTop: 4 },
+  sectionDateRow: { flexDirection: 'row', alignItems: 'center', gap: 6, flex: 1, flexWrap: 'wrap' },
   sectionDate: { fontSize: 12, fontWeight: '700', letterSpacing: 0.4, textTransform: 'uppercase' },
+  sectionHoliday: { fontSize: 12, fontWeight: '600' },
   sectionTotal: { fontSize: 12, fontWeight: '600' },
 
   row: {

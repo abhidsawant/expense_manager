@@ -9,6 +9,7 @@ export type Settings = {
   language: string;
   exchangeRates: Record<string, number>; // rates relative to baseCurrency
   ratesFetchedAt: number; // unix ms timestamp
+  holidayCountry: string; // ISO 3166-1 alpha-2 e.g. 'US'
 };
 
 export type Category = {
@@ -28,4 +29,6 @@ export type Expense = {
   note: string | null;
   receipt_uri: string | null;
   created_at: string;
+  remote_id?: number | null; // set after successful cloud sync
+  syncedRemoteId?: number;   // alias per task spec
 };
