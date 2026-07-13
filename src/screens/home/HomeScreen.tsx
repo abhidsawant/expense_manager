@@ -23,6 +23,7 @@ function groupByDay(expenses: Expense[]) {
   return Object.entries(map).map(([date, data]) => ({ title: date, data }));
 }
 
+
 export default function HomeScreen({ navigation }: any) {
   const { state } = useContext(ExpensesContext);
   const { categories } = useContext(CategoriesContext);
