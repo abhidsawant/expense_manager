@@ -14,6 +14,7 @@ import { EmptyState } from '../../components/EmptyState';
 import { Expense } from '../../types';
 import { useExchangeRates } from '../../hooks/useExchangeRates';
 
+
 function groupByDay(expenses: Expense[]) {
   const map: Record<string, Expense[]> = {};
   [...expenses].sort((a, b) => b.spent_on.localeCompare(a.spent_on)).forEach(e => {
