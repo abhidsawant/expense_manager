@@ -108,16 +108,17 @@ export function useExchangeRate(from: string, to: string) {
     async function load() {
       setLoading(true); setError(null); setOffline(false);
       try {
-        const res = await fetch(`https://api.frankfurter.dev/latest?from=${from}&to=${to}`, { signal: controller.signal });
+        const res = await fetch(`https://api.frankfurter.app/latest?from=${from}&to=${to}`, { signal: controller.signal });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = await res.json();
-        const r = data.rates[to] as number;
+        const r = data.rates?.[to] as number | undefined;
+        if (r === undefined) throw new Error(`Rate not available for ${to}`);
         if (!cancelled) {
           setRate(r); setDate(data.date); setOffline(false);
           await AsyncStorage.setItem(key, JSON.stringify({ rate: r, date: data.date }));
         }
-      } catch (e) {
-        console.error('useExchangeRate fetch failed:', e);
+      } catch (e: any) {
+        if (e?.name === 'AbortError') return;
         const raw = await AsyncStorage.getItem(key);
         if (!cancelled) {
           if (raw) {

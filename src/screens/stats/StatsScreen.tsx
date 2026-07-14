@@ -77,21 +77,7 @@ export default function StatsScreen() {
               <Text style={[styles.totalAmount, { fontSize: rs(40, 28, 48) }]}>
                 {settings.currency}{(total / 100).toFixed(2)}
               </Text>
-              {rate !== null && baseCurrency !== displayCurrency ? (
-                <View style={styles.convertedRow}>
-                  <Text style={styles.convertedAmount}>
-                    {new Intl.NumberFormat('en', { style: 'currency', currency: displayCurrency }).format((total / 100) * rate)}
-                  </Text>
-                  {offline ? (
-                    <View style={styles.offlineBadge}>
-                      <Text style={styles.offlineBadgeText}>offline</Text>
-                    </View>
-                  ) : null}
-                </View>
-              ) : null}
-              {date && baseCurrency !== displayCurrency ? (
-                <Text style={styles.rateDate}>Exchange rate as of {date}</Text>
-              ) : null}
+
               <View style={styles.totalDivider} />
               {/* Mini stats row */}
               <View style={styles.statsRow}>

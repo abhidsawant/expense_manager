@@ -241,23 +241,11 @@ export default function SettingsScreen({ navigation }: any) {
         {/* Currency */}
         <SectionLabel title={t('settings.currency')} />
         <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.border }]}>
-          <View style={styles.currencyRow}>
-            <View style={[styles.currencyBadge, { backgroundColor: theme.primaryLight }]}>
-              <Ionicons name="save-outline" size={14} color={theme.primary} />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={[styles.cardLabel, { color: theme.text }]}>Base currency</Text>
-              <Text style={[styles.cardHint, { color: theme.textMuted }]}>Expenses are saved in this currency</Text>
-            </View>
-            <Text style={[styles.currencyCode, { color: theme.primary, backgroundColor: theme.primaryLight }]}>
-              {settings.baseCurrency ?? 'USD'}
-            </Text>
-          </View>
           <DropdownPicker
             items={currencyItems}
-            selectedValue={settings.baseCurrency ?? 'USD'}
-            onSelect={value => dispatch({ type: 'UPDATE', payload: { baseCurrency: value, ratesFetchedAt: 0 } })}
-            placeholder="Select base currency"
+            selectedValue={settings.displayCurrency ?? settings.baseCurrency ?? 'USD'}
+            onSelect={value => dispatch({ type: 'UPDATE', payload: { displayCurrency: value, currency: symbolForCode(value) } })}
+            placeholder="Select currency"
             loading={currenciesLoading}
           />
           {currenciesError ? (
@@ -266,28 +254,6 @@ export default function SettingsScreen({ navigation }: any) {
               <Text style={[styles.errorText, { color: theme.danger }]}>Unable to load currencies — tap to retry</Text>
             </Pressable>
           ) : null}
-
-          <View style={[styles.currencyDivider, { backgroundColor: theme.border }]} />
-
-          <View style={styles.currencyRow}>
-            <View style={[styles.currencyBadge, { backgroundColor: theme.surface }]}>
-              <Ionicons name="eye-outline" size={14} color={theme.textMuted} />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={[styles.cardLabel, { color: theme.text }]}>Display currency</Text>
-              <Text style={[styles.cardHint, { color: theme.textMuted }]}>Amounts are converted and shown in this currency</Text>
-            </View>
-            <Text style={[styles.currencyCode, { color: theme.primary, backgroundColor: theme.primaryLight }]}>
-              {settings.displayCurrency ?? settings.baseCurrency ?? 'USD'}
-            </Text>
-          </View>
-          <DropdownPicker
-            items={currencyItems}
-            selectedValue={settings.displayCurrency ?? settings.baseCurrency ?? 'USD'}
-            onSelect={value => dispatch({ type: 'UPDATE', payload: { displayCurrency: value, currency: symbolForCode(value) } })}
-            placeholder="Select display currency"
-            loading={currenciesLoading}
-          />
         </View>
 
         {/* Language */}
@@ -364,7 +330,6 @@ const styles = StyleSheet.create({
   currencyRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   currencyBadge: { width: 32, height: 32, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
   currencyCode: { fontSize: 12, fontWeight: '800', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8, overflow: 'hidden' },
-  currencyDivider: { height: 1, marginVertical: 4 },
   pillRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   pill: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20, borderWidth: 1.5 },
   pillText: { fontSize: 13, fontWeight: '600' },
